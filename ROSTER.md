@@ -85,6 +85,7 @@ Bảng tướng → hiệu ứng ở `src/data/vfx.js`. Mọi mô tả kết th�
 
 | id | Linh thú | Tướng | Từ khóa (chọn rig) |
 |---|---|---|---|
+| shenlong | Thanh Long (rồng phương Đông thân dài) | Quan Vũ | snake serpent long body |
 | baihu | Bạch Hổ | Triệu Vân | quadruped tiger beast big cat |
 | wenhu | Hổ vằn ("Hổ Si") | Hứa Chử | quadruped tiger beast big cat |
 | canglang | Sói xám ("Lang Cố") | Tư Mã Ý | quadruped wolf beast |
@@ -92,7 +93,7 @@ Bảng tướng → hiệu ứng ở `src/data/vfx.js`. Mọi mô tả kết th�
 | xiaotian | Hao Thiên Khuyển | Dương Tiễn | quadruped wolf beast |
 | zhanxiang | Voi chiến | Mạnh Hoạch | quadruped elephant beast |
 
-- **Thanh Long của Quan Vũ không dùng sprite**: server không có rig rồng thân dài (từ khóa `dragon` ra thằn lằn bốn chân), nên rồng phương Đông được vẽ bằng code (`dragon` trong `src/vfx.js`).
+- **Thanh Long của Quan Vũ**: từ khóa có chữ `dragon` ra thằn lằn bốn chân; từ khóa `snake serpent long body` mới ra rig thân dài (145x93, có `idle`, `walk`, `attack` phun hơi, `die`). Hình rồng là sprite; hào quang quanh nó (tia sáng, vòng sáng, mây, sét, dòng sáng từ lưỡi đao, bóng rồng khổng lồ mờ phía sau) vẽ bằng code, kiểu `dragon` trong `src/vfx.js`. Sprite chỉ cao 79 điểm ảnh nên vẽ ở khoảng 2,2 lần; to hơn sẽ nhòe.
 - 14 sheet đã gen nhưng không còn dùng nằm ở `sprites/beasts-unused/` (ngoài game): thanhlong, wolong, jiaolong, huolong, qilin, yinshi, jinying, darkraven, zhuque, xuanwu, chitu, shenlu, xianhe, heixiong. Hai sheet thử `zhangfei-cavalry`, `zhaoyun-cavalry` ở `sprites/*-sheet/`.
 - Trên server còn 3 sprite đã hủy giữa chừng: `qinglong`, `azuredragon`, `yeya`.
 - Hướng linh thú: coi như vẽ quay trái giống tướng; số đo không đủ rõ. Con nào quay lưng về phía địch thì thêm `facing: "right"` vào `BEASTS` trong `src/data/vfx.js`.

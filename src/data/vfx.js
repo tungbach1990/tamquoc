@@ -8,12 +8,14 @@
 //   array:   seal (a jade seal drops instead of light pillars)
 //   dark:    giant (the caster's own shape looms behind him)
 //   roar:    shout (the word thrown out with the sound waves)
-// dragon, storm, grace and wheels take no knobs: each is one general's own (Guan Yu's Azure Dragon, Zhuge
-// Liang's wind and rain over the eight trigrams, Liu Bei's benevolence, Nezha's Wind Fire Wheels).
+//   dragon:  beast (the painted dragon; the kind draws its glory round it)
+// dragon, storm, grace and wheels are each one general's own (Guan Yu's Azure Dragon, Zhuge Liang's wind and
+// rain over the eight trigrams, Liu Bei's benevolence, Nezha's Wind Fire Wheels).
 
 /** The spirit beasts that have art (assets/beasts/<id>/): only generals whose story has the beast in it.
  *  facing: "right" when the sheet is drawn facing right. */
 export const BEASTS = {
+  shenlong: { name: "Thanh Long" },
   baihu: { name: "Bạch Hổ" },
   wenhu: { name: "Mãnh Hổ" },
   canglang: { name: "Thương Lang" },
@@ -29,7 +31,7 @@ const charge = (c, c2) => ({ fx: "charge", c, c2 });
 export const VFX = {
   // ---- Thục ----
   liubei: { fx: "grace", c: "#f2c94c", c2: "#fff6c8" },
-  guanyu: { fx: "dragon", c: "#1fae6a", c2: "#c8ffe0" },
+  guanyu: { fx: "dragon", beast: "shenlong", c: "#1fae6a", c2: "#c8ffe0" },
   zhangfei: { fx: "roar", c: "#e0453a", c2: "#ffd9c8", shout: "HÁÁÁ!!!" },
   zhaoyun: beast("baihu", "dash", "#8fd3ff", "#ffffff"),
   zhugeliang: { fx: "storm", c: "#5fa8ff", c2: "#e8f6ff" },

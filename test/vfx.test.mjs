@@ -46,11 +46,13 @@ test("every general has a tactic effect of a known kind; every beast is one gene
   for (const [gid, v] of Object.entries(VFX)) {
     assert.ok(FX_KINDS.includes(v.fx), gid);
     assert.match(v.c, /^#[0-9a-f]{6}$/, gid); assert.match(v.c2, /^#[0-9a-f]{6}$/, gid);
-    if (v.fx === "beast") { assert.ok(BEASTS[v.beast], `${gid}: no beast ${v.beast}`); assert.ok(["dash", "dive"].includes(v.move), gid); used.push(v.beast) }
+    if (v.beast) { assert.ok(BEASTS[v.beast], `${gid}: no beast ${v.beast}`); used.push(v.beast) }
+    if (v.fx === "beast") assert.ok(["dash", "dive"].includes(v.move), gid);
     assert.equal(HEALING_KINDS.includes(v.fx), GENERALS[gid].tactic.shape === "heal", gid);
     assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 2400, gid);
   }
-  assert.equal(Object.keys(BEASTS).length, 6);
+  assert.equal(Object.keys(BEASTS).length, 7);
+  assert.equal(VFX.guanyu.beast, "shenlong");   // Guan Yu's dragon is painted art; its glory is drawn round it
   // the ones the user named: Guan Yu's is a dragon drawn in code, Zhuge Liang calls wind and rain, Zhao Yun the white tiger
   assert.deepEqual([VFX.guanyu.fx, VFX.zhugeliang.fx, VFX.zhaoyun.beast, VFX.liubei.fx, VFX.nezha.fx], ["dragon", "storm", "baihu", "grace", "wheels"]);
   assert.deepEqual(used.sort(), Object.keys(BEASTS).sort());

@@ -6,21 +6,25 @@
        ...&layer=front|back|both   &dir=1|-1   &now=1234 (ms on the clock)   &min=0.3 (how solid a cell must be)
      Letters: g G green (dark, bright) · Y gold · W white/ivory · c pale mint · R red · d dark · o other. -->
 <meta charset="utf-8">
+<base href="../">
 <title>look</title>
 <pre id="out" style="font: 9px/9px monospace">drawing…</pre>
 <script type="module">
-  import { VFX } from "../src/data/vfx.js";
-  import { GENERALS } from "../src/data/generals.js";
-  import { drawEffect } from "../src/vfx.js";
+  import { VFX } from "./src/data/vfx.js";
+  import { GENERALS } from "./src/data/generals.js";
+  import { drawEffect } from "./src/vfx.js";
+  import { loadManifest, sprite } from "./src/sprites.js";
   const q = new URLSearchParams(location.search), num = (k, d) => (q.has(k) ? +q.get(k) : d);
   const gid = q.get("gid") ?? "guanyu", k = num("k", 0.5), dir = num("dir", 1), layer = q.get("layer") ?? "front", min = num("min", 0.3);
   const W = 540, H = 600, [x0, y0, x1, y1] = (q.get("box") ?? `0,0,${W},${H}`).split(",").map(Number), cols = num("cols", 108);
   const heal = GENERALS[gid].tactic.shape === "heal", side = (x) => (dir > 0 ? x : W - x);
   const env = {
-    W, H, cfg: VFX[gid], who: GENERALS[gid].name, tactic: GENERALS[gid].tactic.name, dir, heal, now: num("now", 1000), beast: null,
+    W, H, cfg: VFX[gid], who: GENERALS[gid].name, tactic: GENERALS[gid].tactic.name, dir, heal, now: num("now", 1000), beast: null,   // the spirit beast's art is loaded below; the caster stays a blank
     caster: { x: side(226), y: 392, tall: 125, s: { ready: false } },
     targets: (heal ? [[150, 262], [226, 392], [150, 522]] : [[390, 262], [390, 392], [390, 522]]).map(([x, y]) => ({ x: side(x), y, tall: 100 })),
   };
+  await loadManifest();
+  if (env.cfg.beast) env.beast = await sprite(env.cfg.beast, "beasts").promise;
   const scale = 2, cv = Object.assign(document.createElement("canvas"), { width: W * scale, height: H * scale }), ctx = cv.getContext("2d");
   ctx.scale(scale, scale);
   for (const l of layer === "both" ? ["back", "front"] : [layer]) drawEffect(ctx, l, k, env);
