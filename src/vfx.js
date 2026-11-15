@@ -14,12 +14,16 @@
 //   now             a running clock in ms, for sprite animation and flicker
 
 import { drawSprite, animOf } from "./sprites.js";
+import { mustFlip } from "./spritemeta.js";
 import { BEASTS } from "./data/vfx.js";
 
 /** Where in the effect (0..1) the blow lands: the view applies the damage then. */
 export const HIT = 0.62;
 /** How long a kind of effect plays, in ms at normal speed: the ones with a creature or a long build-up get more. */
-export const effectMs = (cfg) => ({ beast: 1750, dragon: 2400, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
+export const effectMs = (cfg) => ({ beast: 1750, dragon: 3400, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
+/** When in the effect (0..1) the general's own strike animation starts: at once, except where he first calls
+ *  something up and strikes later (Guan Yu holds his blade up while the dragon wheels, then cuts). */
+export const castAt = (cfg) => ({ dragon: 0.46 })[cfg.fx] ?? 0;
 
 const TAU = Math.PI * 2;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -133,6 +137,17 @@ function giant(ctx, env, a, anim = "skill01") {
   if (!caster.s?.ready) return;
   const shake = Math.sin(env.now / 18) * 5 * a, grow = 1 + 0.08 * Math.sin(env.now / 60);
   drawSprite(ctx, caster.s, animOf(caster.s, anim), env.now, caster.x - dir * 34 + shake, caster.y + 190, { scale: 430 / caster.s.h * grow, faceRight: dir > 0, alpha: 0.62 * a, loop: true });
+}
+/** A side-on figure in flight, its middle at (x, y), heading along (vx, vy). It leans into its path (lean: how
+ *  much, 0..1). face: +1 or -1 keeps it looking that way; without it the figure turns with its heading,
+ *  squeezing flat as it comes about, the way a ribbon turns over. */
+function fly(ctx, s, anim, ms, x, y, vx, vy, size, alpha, { lean = 1, face = 0 } = {}) {
+  const speed = Math.hypot(vx, vy) || 1, turn = Math.max(-1, Math.min(1, vx / speed * 2.5));
+  const sx = face || (Math.abs(turn) < 0.2 ? (turn < 0 ? -0.2 : 0.2) : turn);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(vy, Math.abs(vx)) * lean * Math.sign(sx)); ctx.scale(sx, 1);
+  // drawSprite puts the feet where it is told: tell it where they fall when the figure's middle is at the origin
+  drawSprite(ctx, s, anim, ms, (s.cx - s.ax) * size * (mustFlip(s.facing, true) ? 1 : -1), (s.ay - s.cy) * size, { scale: size, faceRight: true, alpha });
+  ctx.restore();
 }
 /** A smooth curve through the points (Catmull-Rom): u = 0 is the first point, u = 1 the second, and so on. */
 function spline(pts, u) {
@@ -270,78 +285,98 @@ const KINDS = {
     impacts(ctx, k, env, 1.3);
   },
 
-  /** The Azure Dragon answers the blade. The dragon itself is painted (a spirit beast's sheet); its glory is
-   *  drawn here: the sky darkens and opens, a river of light climbs from the blade, and the dragon hangs over
-   *  the field among rays, haloes and lightning, its vast shape faint in the clouds behind, before it falls on the enemy. */
+  /** Guan Yu lifts his blade and the Azure Dragon rises out of it to wheel round the sky; when the blade
+   *  falls, the dragon stoops on the enemy's column and runs it through from end to end. The dragon is painted
+   *  art (a spirit beast's sheet) flown along a path; the blade, the sky and the lance of light are drawn here. */
   dragon(ctx, layer, k, env) {
-    const { cfg, dir, caster, beast, W, H } = env, f = field(env), GOLD = "#ffe08a", LUNGE = 0.46;
-    const a = span(k, 0, 0.12) * (1 - span(k, 0.9, 1)), shown = span(k, 0.1, 0.22) * (1 - span(k, 0.86, 0.97));
-    const tip = { x: caster.x + dir * 22, y: caster.y - caster.tall * 0.85 };
-    // about 2.2 times its painted size: larger and the painting goes soft, and its antlers run into the armies' bars
-    const full = beast?.ready ? Math.min(175 / beast.h, 250 / beast.w) : 1, tall = beast?.ready ? beast.h * full : 175;
-    const hover = { x: W / 2 - dir * 6, y: 230 + Math.sin(env.now / 260) * 6 }, prey = { x: f.cx - dir * 26, y: Math.min(H - 20, f.cy + 34) };
-    const leap = easeIn(span(k, LUNGE, HIT)), away = easeIn(span(k, 0.76, 0.97)), grown = easeOut(span(k, 0.1, 0.3));
-    const p = { x: lerp(hover.x, prey.x, leap), y: lerp(hover.y, prey.y, leap) + (1 - grown) * 70 - away * 150 };   // it comes up out of the light, and leaves upward
-    const heart = { x: p.x, y: p.y - tall * 0.5 };
+    const { cfg, dir, caster, beast, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1.5;
+    const hand = { x: caster.x + dir * 8, y: caster.y - caster.tall * 0.62 }, tip = { x: hand.x, y: hand.y - 74 };   // the blade, held straight up
+    const C = { x: W / 2, y: 124 }, RX = 178, RY = 50;                              // the ring it flies in the sky
+    // the enemy's column, in the order it will be run through
+    const marks = [...env.targets].sort((a, b) => a.y - b.y || (a.x - b.x) * dir).map((t) => ({ x: t.x, y: t.y - t.tall * 0.5, t }));
+    const n = marks.length, first = marks[0], last = marks[n - 1], passes = (i) => HIT + (EXIT - HIT) * i / n;
+    // it wheels over the far side toward the enemy, and leaves the ring there, a little short of the column
+    const phiD = -Math.acos(Math.max(-0.9, Math.min(0.95, ((first.x - C.x) * dir - 50) / RX)));
+    const wheel = (kk) => {
+      const e = easeOut(span(kk, RISE, RISE + 0.16)), ph = phiD - TURNS * TAU * (DIVE - kk) / (DIVE - RISE);   // e: it spirals up out of the blade
+      return { x: lerp(tip.x, C.x, e) + dir * RX * e * Math.cos(ph), y: lerp(tip.y, C.y, e) + RY * e * Math.sin(ph), near: (Math.sin(ph) + 1) / 2, e };
+    };
+    const P0 = wheel(DIVE), lead = n > 1 ? { x: last.x - marks[n - 2].x, y: last.y - marks[n - 2].y } : { x: dir * 40, y: 280 }, ll = Math.hypot(lead.x, lead.y) || 1;
+    const road = [P0, ...marks, { x: last.x + lead.x / ll * 300, y: last.y + lead.y / ll * 300 }];             // down through each of them, and out the far end
+    const along = (kk) => { if (kk > HIT) return 1 + n * span(kk, HIT, EXIT); const s = span(kk, DIVE, HIT); return s * (0.4 + 0.6 * s) };
+    const at = (kk) => (kk < DIVE ? wheel(kk) : spline(road, along(kk)));
+    // about 2.2 times its painted size at the strike (larger and the painting goes soft); small on the far side of its ring
+    const full = beast?.ready ? Math.min(175 / beast.h, 250 / beast.w) : 1;
+    const sizeAt = (kk) => { if (kk >= DIVE) return lerp(full * (0.5 + 0.3 * P0.near), full * 1.05, easeIn(span(kk, DIVE, HIT))); const w = wheel(kk); return full * (0.5 + 0.3 * w.near) * (0.3 + 0.7 * w.e) };
+    const shown = span(k, RISE, RISE + 0.05) * (1 - span(k, EXIT - 0.03, EXIT + 0.03)), far = k < DIVE && wheel(k).near < 0.5;
+    const dragonAt = (kk, alpha) => {
+      const p = at(kk), q = at(kk + 0.004), size = sizeAt(kk);
+      if (beast?.ready) fly(ctx, beast, animOf(beast, "walk"), env.now, p.x, p.y, q.x - p.x, q.y - p.y, size, alpha, kk < DIVE ? { lean: 0.5 } : { lean: 1, face: dir });
+      else lit(ctx, () => { glow(ctx, p.x, p.y, 64 * size / full, cfg.c2, alpha); glow(ctx, p.x, p.y, 24 * size / full, "#ffffff", alpha) });   // no art: a ball of light
+    };
+    const call = span(k, 0, 0.08) * (1 - span(k, DIVE + 0.02, DIVE + 0.12));       // while the blade is up, and through its fall
     if (layer === "back") {
-      ctx.fillStyle = `rgba(3,18,16,${(0.5 * a).toFixed(3)})`; ctx.fillRect(0, 0, W, H);
+      const a = span(k, 0, 0.1) * (1 - span(k, 0.9, 1));
+      ctx.fillStyle = `rgba(3,16,18,${(0.55 * a).toFixed(3)})`; ctx.fillRect(0, 0, W, H);
       lit(ctx, () => {
-        const open = span(k, 0, 0.3);                                   // the blade opens the sky: a pillar of light from its point
-        if (open < 1) { const g = ctx.createLinearGradient(0, tip.y, 0, 0), w = 10 + 50 * easeOut(open); g.addColorStop(0, rgba(cfg.c2, 0.9 * (1 - open))); g.addColorStop(1, rgba(cfg.c, 0)); ctx.fillStyle = g; ctx.fillRect(tip.x - w / 2, 0, w, tip.y) }
-        const glory = shown * (1 - leap * 0.6);                         // behind the dragon: slow rays, a halo, a ring of lights
-        for (let i = 0; i < 16; i++) {
-          const ang = i * TAU / 16 + env.now / 3800, len = 300 + 60 * Math.sin(env.now / 500 + i * 1.3), g = ctx.createRadialGradient(heart.x, heart.y, 30, heart.x, heart.y, len);
-          g.addColorStop(0, rgba(i % 2 ? GOLD : cfg.c2, 0.34 * glory)); g.addColorStop(1, rgba(cfg.c, 0));
-          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(heart.x, heart.y); ctx.arc(heart.x, heart.y, len, ang - 0.07, ang + 0.07); ctx.closePath(); ctx.fill();
-        }
-        glow(ctx, heart.x, heart.y, 230, cfg.c, 0.5 * glory); glow(ctx, heart.x, heart.y, 120, GOLD, 0.45 * glory);
-        ring(ctx, heart.x, heart.y, 128, 3, GOLD, 0.8 * glory); ring(ctx, heart.x, heart.y, 142, 1.5, cfg.c2, 0.7 * glory);
-        for (let i = 0; i < 12; i++) { const ang = i * TAU / 12 - env.now / 1500; glow(ctx, heart.x + Math.cos(ang) * 135, heart.y + Math.sin(ang) * 135, 7, "#ffffff", 0.9 * glory) }
+        // the lifted blade opens the sky: a shaft of light from its point
+        const shaft = call * (1 - span(k, DIVE - 0.04, DIVE));
+        if (shaft > 0) { const g = ctx.createLinearGradient(0, tip.y, 0, 0), w = 8 + 22 * shaft + 4 * Math.sin(env.now / 90); g.addColorStop(0, rgba(cfg.c2, 0.75 * shaft)); g.addColorStop(1, rgba(cfg.c, 0)); ctx.fillStyle = g; ctx.fillRect(tip.x - w / 2, 0, w, tip.y) }
+        ring(ctx, caster.x, caster.y, 26 + 70 * easeOut(span(k, 0, 0.14)), 4, cfg.c2, call * (1 - span(k, 0, 0.14)), 0.38);
+        // the wake it leaves round the sky
+        if (k > RISE && k < EXIT) for (let j = 1; j <= 16; j++) { const kk = k - j * 0.007; if (kk < RISE) break; const p = at(kk); glow(ctx, p.x, p.y, sizeAt(kk) / full * (50 - j * 2.6), j % 3 ? cfg.c : cfg.c2, 0.32 * shown * (1 - j / 16)) }
       });
-      // its shape, vast and faint, in the sky behind it
-      if (beast?.ready && shown > 0) drawSprite(ctx, beast, animOf(beast, "idle"), env.now, hover.x + dir * 30, hover.y + 150, { scale: full * 2.1, faceRight: dir > 0, alpha: 0.16 * shown * (1 - leap) });
-      for (let i = 0; i < 14; i++) {                                    // clouds drawn in round it
-        const side = i % 2 ? 1 : -1, drift = (1 - easeOut(span(k, 0, 0.35))) * 200, x = W / 2 + side * (70 + rnd(i, 1) * 200 + drift) + Math.sin(env.now / 900 + i) * 12, y = 70 + rnd(i, 2) * 150;
-        glow(ctx, x, y, 44 + rnd(i, 3) * 34, "#eafff4", 0.28 * a); glow(ctx, x + 26, y + 8, 30 + rnd(i, 4) * 20, "#ffffff", 0.2 * a);
+      if (far && shown > 0) dragonAt(k, shown * 0.92);                             // on the far side of its ring: behind the clouds
+      for (let i = 0; i < 16; i++) {                                               // clouds, gathering as he calls
+        const drift = (1 - easeOut(span(k, 0, 0.3))) * (i % 2 ? 180 : -180), x = (i + 0.5) * W / 16 + drift + Math.sin(env.now / 900 + i) * 12, y = 46 + rnd(i, 2) * 150;
+        glow(ctx, x, y, 40 + rnd(i, 3) * 34, "#e6fff2", 0.24 * a); glow(ctx, x + 24, y + 8, 28 + rnd(i, 4) * 20, "#ffffff", 0.16 * a);
       }
-      lit(ctx, () => { ctx.save(); ctx.translate(f.cx, f.cy); ctx.scale(1, 0.4); glow(ctx, 0, 0, 180, cfg.c, 0.55 * span(k, LUNGE, HIT) * (1 - span(k, 0.85, 1))); ctx.restore() });
+      lit(ctx, () => {
+        for (let i = 0; i < 3; i++) {                                              // lightning runs through them
+          const beat = Math.floor(env.now / 110) + i * 5; if (beat % 5) continue;
+          const x = 40 + rnd(beat, 1) * (W - 80), y = 50 + rnd(beat, 2) * 110;
+          bolt(ctx, x, y, x + (rnd(beat, 3) - 0.5) * 150, y + 30 + rnd(beat, 4) * 60, beat, cfg.c2, "#ffffff", 2, 0.8 * a * (1 - span(k, EXIT, 0.9)));
+        }
+        // the column it is called down on begins to glow
+        const doom = span(k, DIVE - 0.12, HIT) * (1 - span(k, EXIT, 1));
+        for (const m of marks) { ctx.save(); ctx.translate(m.t.x, m.t.y); ctx.scale(1, 0.38); glow(ctx, 0, 0, 62, cfg.c, 0.6 * doom); ctx.restore() }
+      });
       return;
     }
-    const cut = span(k, 0, 0.2);                                        // the slash that calls it
-    if (cut > 0 && cut < 1) lit(ctx, () => crescent(ctx, caster.x, caster.y - caster.tall * 0.5, 74, dir > 0 ? -0.5 : Math.PI + 0.5, 2.6 * easeOut(cut), 22, cfg.c, cfg.c2, 1 - cut));
-    // a river of light climbs from the blade and winds up into the dragon
-    const flow = span(k, 0.03, 0.12) * (1 - span(k, LUNGE, HIT));
-    if (flow > 0) lit(ctx, () => {
-      const way = [tip, { x: tip.x - dir * 40, y: tip.y - 120 }, { x: hover.x - dir * 120, y: 120 }, { x: hover.x + dir * 40, y: 80 }, { x: hover.x + dir * 100, y: 170 }, heart];
-      const upto = (way.length - 1) * easeOut(span(k, 0.03, 0.32));
-      for (let i = 0; i < 60; i++) { const u = upto * i / 60, q = spline(way, u); glow(ctx, q.x + Math.sin(u * 5 - env.now / 140) * 7, q.y, 9 + 9 * Math.sin(i / 60 * Math.PI), i % 3 ? cfg.c : cfg.c2, 0.22 * flow) }
-      const q = spline(way, upto); glow(ctx, q.x, q.y, 26, "#ffffff", 0.8 * flow * (1 - span(k, 0.3, 0.4)));
+    lit(ctx, () => {
+      // the blade of light: straight up while he calls, then swung down at the enemy
+      const fall = easeIn(span(k, DIVE - 0.03, DIVE + 0.04)), ang = -Math.PI / 2 + (Math.PI / 2 + 0.55) * fall, len = 74 * easeOut(span(k, 0, 0.08));
+      const bx = hand.x + dir * Math.cos(ang) * len, by = hand.y + Math.sin(ang) * len;
+      if (call > 0) {
+        streak(ctx, hand.x, hand.y, bx, by, 7, cfg.c2, call); streak(ctx, hand.x, hand.y, bx, by, 2.5, "#ffffff", call);
+        glow(ctx, bx, by, 24 + 8 * Math.sin(env.now / 70), cfg.c2, 0.9 * call); glow(ctx, bx, by, 9, "#ffffff", call);
+        for (let i = 0; i < 12; i++) { const up = (env.now / 700 + i / 12) % 1, turn = env.now / 130 + i * 1.9; glow(ctx, caster.x + Math.cos(turn) * (34 - 22 * up), caster.y - up * (caster.tall + 70), 3 + 3 * (1 - up), i % 2 ? cfg.c : cfg.c2, call * (1 - up) * (1 - fall)) }   // wind winding up round him
+      }
+      const cut = span(k, DIVE - 0.02, DIVE + 0.12);                               // the arc the falling blade leaves
+      if (cut > 0 && cut < 1) {
+        const rot = dir > 0 ? -0.5 : Math.PI + 0.5, open = 2.5 * easeOut(Math.min(1, cut * 3));
+        crescent(ctx, hand.x, hand.y, 92, rot, open, 30, cfg.c, cfg.c2, 1 - cut); crescent(ctx, hand.x, hand.y, 70, rot, open * 0.85, 14, cfg.c2, "#ffffff", (1 - cut) * 0.85);
+      }
     });
-    if (shown > 0) {
-      lit(ctx, () => glow(ctx, heart.x, heart.y, tall * 0.9, cfg.c, 0.35 * shown));
-      if (beast?.ready) {
-        // hovering it breathes; from the lunge on, its attack plays once through
-        const striking = k >= LUNGE && k < 0.76 && !!beast.tags.attack, anim = striking ? "attack" : animOf(beast, "idle"), ms = striking ? (k - LUNGE) * effectMs(cfg) : env.now;
-        const opts = { scale: full * (0.55 + 0.45 * grown), faceRight: dir > 0, loop: !striking };
-        if (leap > 0 && leap < 1) for (let i = 3; i >= 1; i--) { const b = easeIn(span(k - i * 0.02, LUNGE, HIT)); drawSprite(ctx, beast, anim, ms, lerp(hover.x, prey.x, b), lerp(hover.y, prey.y, b), { ...opts, alpha: shown * (0.3 - i * 0.07) }) }
-        drawSprite(ctx, beast, anim, ms, p.x, p.y, { ...opts, alpha: shown });
-        // a holy shimmer: the same figure laid over itself in light
-        ctx.save(); ctx.globalCompositeOperation = "lighter"; drawSprite(ctx, beast, anim, ms, p.x, p.y, { ...opts, alpha: shown * (0.18 + 0.12 * Math.sin(env.now / 180)) }); ctx.restore();
-      } else lit(ctx, () => { glow(ctx, heart.x, heart.y, 90, cfg.c2, shown); glow(ctx, heart.x, heart.y, 34, "#ffffff", shown) });   // no art: a ball of light
-      lit(ctx, () => {
-        for (let i = 0; i < 4; i++) {                                   // lightning plays about it
-          const beat = Math.floor(env.now / 90) + i * 7; if (beat % 4) continue;
-          const ang = rnd(beat, 1) * TAU, r0 = tall * 0.45, r1 = tall * (0.8 + 0.5 * rnd(beat, 2));
-          bolt(ctx, heart.x + Math.cos(ang) * r0, heart.y + Math.sin(ang) * r0 * 0.7, heart.x + Math.cos(ang) * r1, heart.y + Math.sin(ang) * r1 * 0.7, beat, cfg.c2, "#ffffff", 2, 0.85 * shown);
-        }
-        for (let i = 0; i < 26; i++) { const lift = (env.now / 1600 + rnd(i, 3)) % 1, ang = rnd(i, 4) * TAU; glow(ctx, heart.x + Math.cos(ang) * tall * (0.3 + 0.6 * rnd(i, 5)), heart.y + tall * 0.5 - lift * tall * 1.3, 3 + 3 * rnd(i, 6), i % 2 ? GOLD : "#ffffff", (1 - lift) * shown) }
-      });
-      words(ctx, BEASTS[cfg.beast]?.name ?? "", hover.x, hover.y + 24, 22, GOLD, "rgba(0,0,0,.85)", span(k, 0.16, 0.26) * (1 - span(k, LUNGE - 0.08, LUNGE)));
+    if (shown > 0 && !far) {
+      lit(ctx, () => { const p = at(k); glow(ctx, p.x, p.y, 120 * sizeAt(k) / full, cfg.c, 0.3 * shown) });
+      if (k >= DIVE) for (let j = 3; j >= 1; j--) dragonAt(Math.max(DIVE, k - j * 0.012), shown * (0.34 - j * 0.08));   // it blurs as it stoops
+      dragonAt(k, shown);
     }
-    const flash = span(k, HIT, HIT + 0.14);
-    if (flash > 0 && flash < 1) { ctx.fillStyle = rgba(cfg.c2, 0.45 * (1 - flash)); ctx.fillRect(0, 0, W, H) }
-    pillars(ctx, k, env);
-    impacts(ctx, k, env, 1.5);
+    // the lance of light it draws down the column behind it
+    const lance = span(k, DIVE, DIVE + 0.03) * (1 - span(k, EXIT - 0.02, EXIT + 0.14));
+    if (lance > 0) lit(ctx, () => {
+      const upto = along(Math.min(k, EXIT));
+      ctx.beginPath(); for (let s = 0; s <= 28; s++) { const p = spline(road, upto * s / 28); ctx[s ? "lineTo" : "moveTo"](p.x, p.y) }
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.lineWidth = 26; ctx.strokeStyle = rgba(cfg.c, 0.4 * lance); ctx.stroke();
+      ctx.lineWidth = 10; ctx.strokeStyle = rgba(cfg.c2, 0.8 * lance); ctx.stroke();
+      ctx.lineWidth = 3; ctx.strokeStyle = rgba("#ffffff", lance); ctx.stroke();
+    });
+    // each of them is struck as it passes through
+    marks.forEach((m, i) => impact(ctx, span(k, passes(i), passes(i) + 0.24), m.t.x, m.t.y, m.t.tall, cfg.c, cfg.c2, 1.5));
+    const flash = span(k, HIT, HIT + 0.1);
+    if (flash > 0 && flash < 1) { ctx.fillStyle = rgba(cfg.c2, 0.4 * (1 - flash)); ctx.fillRect(0, 0, W, H) }
   },
 
   /** The eight trigrams turn under both lines; he calls the wind and the rain: clouds, gales, a whirlwind, lightning. */

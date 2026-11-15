@@ -16,7 +16,7 @@ export function bbox(rgba, sw, f) {
   return n ? { x0, x1, y0, y1, n } : null;
 }
 
-/** sheet.json (Aseprite array format with frameTags) + the sheet's pixels -> { frames, tags, fw, fh, ax, ay, h, facing, mounted }. */
+/** sheet.json (Aseprite array format with frameTags) + the sheet's pixels -> { frames, tags, fw, fh, ax, ay (the feet), cx, cy (the figure's middle), w, h, facing, mounted }. */
 export function analyze(rgba, sw, json) {
   const frames = json.frames.map((fr) => ({ ...fr.frame, dur: fr.duration || 83 }));
   const tags = Object.fromEntries(json.meta.frameTags.map((t) => [t.name, { from: t.from, to: t.to }]));
@@ -27,7 +27,7 @@ export function analyze(rgba, sw, json) {
   for (let y = Math.max(b.y0, b.y1 - 9); y <= b.y1; y++) for (let x = b.x0; x <= b.x1; x++)
     if (rgba[((f0.y + y) * sw + f0.x + x) * 4 + 3] > 127) { sum += x; n++ }
   const ax = n ? Math.round(sum / n) : Math.round((b.x0 + b.x1) / 2), ay = b.y1 + 1;
-  return { frames, tags, fw: f0.w, fh: f0.h, ax, ay, h: b.y1 - b.y0 + 1, w: b.x1 - b.x0 + 1, facing: "left", mounted: MOUNTED.has(`${f0.w}x${f0.h}`) };
+  return { frames, tags, fw: f0.w, fh: f0.h, ax, ay, cx: (b.x0 + b.x1 + 1) / 2, cy: (b.y0 + b.y1 + 1) / 2, h: b.y1 - b.y0 + 1, w: b.x1 - b.x0 + 1, facing: "left", mounted: MOUNTED.has(`${f0.w}x${f0.h}`) };
 }
 
 /** Whether a figure must be mirrored: it is drawn facing `facing` and has to look right or left. */

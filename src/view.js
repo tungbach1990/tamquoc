@@ -5,7 +5,7 @@ import { GENERALS } from "./data/generals.js";
 import { MAX_ROUNDS } from "./battle.js";
 import { sprite, drawSprite, drawPlaceholder, animOf, animLength } from "./sprites.js";
 import { VFX } from "./data/vfx.js";
-import { drawCutIn, drawEffect, effectMs, HIT } from "./vfx.js";
+import { drawCutIn, drawEffect, effectMs, castAt, HIT } from "./vfx.js";
 
 export const W = 540, H = 600;
 const ROW_Y = [262, 392, 522], COL_X = [[226, 150, 74], [314, 390, 466]];
@@ -114,8 +114,9 @@ export function createBattleView(canvas, result, opts = {}) {
       evT += dt;
       if (show) {
         show.env.now = clock;
-        // the general goes into his skill as the banner clears
-        if (!show.cast && evT >= T.cut - 160) { show.cast = true; play(units.get(ev.id), "skill01", false, show.ms - 150) }
+        // the general goes into his skill as the banner clears, or later when his effect has him wait
+        const wait = show.ms * castAt(show.env.cfg);
+        if (!show.cast && evT >= T.cut - 160 + wait) { show.cast = true; play(units.get(ev.id), "skill01", false, show.ms - wait - 150) }
       } else if (ev.t === "act") {
         // foot and horse step up to strike; archers and strategists stay put
         const u = units.get(ev.id), melee = (u.g.type === "B" || u.g.type === "K") && ev.hits.length;

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { GENERALS, GENERAL_IDS } from "../src/data/generals.js";
 import { VFX, BEASTS, FX_KINDS, HEALING_KINDS } from "../src/data/vfx.js";
-import { drawEffect, drawCutIn, effectMs, EFFECT_KINDS, HIT } from "../src/vfx.js";
+import { drawEffect, drawCutIn, effectMs, castAt, EFFECT_KINDS, HIT } from "../src/vfx.js";
 import { drawSprite } from "../src/sprites.js";
 import { mustFlip } from "../src/spritemeta.js";
 import { simulate } from "../src/battle.js";
@@ -22,7 +22,7 @@ function fakeCtx() {
   };
   return new Proxy(own, { get: (t, p) => (p in t ? t[p] : (...args) => { calls.push([p, ...args]) }), set: (t, p, v) => { t[p] = v; return true } });
 }
-const sheet = (facing = "left") => ({ ready: true, img: {}, facing, ax: 5, ay: 10, h: 10, w: 10, frames: [{ x: 0, y: 0, w: 10, h: 10, dur: 83 }], tags: { idle: { from: 0, to: 0 }, walk: { from: 0, to: 0 }, attack: { from: 0, to: 0 } } });
+const sheet = (facing = "left") => ({ ready: true, img: {}, facing, ax: 5, ay: 10, cx: 5, cy: 5, h: 10, w: 10, frames: [{ x: 0, y: 0, w: 10, h: 10, dur: 83 }], tags: { idle: { from: 0, to: 0 }, walk: { from: 0, to: 0 }, attack: { from: 0, to: 0 } } });
 const sawNumbers = (calls) => calls.every((c) => c.slice(1).every((v) => typeof v !== "number" || Number.isFinite(v)));
 
 test("facing: a figure drawn facing left is mirrored on the left side of the field, and not on the right", () => {
@@ -49,7 +49,8 @@ test("every general has a tactic effect of a known kind; every beast is one gene
     if (v.beast) { assert.ok(BEASTS[v.beast], `${gid}: no beast ${v.beast}`); used.push(v.beast) }
     if (v.fx === "beast") assert.ok(["dash", "dive"].includes(v.move), gid);
     assert.equal(HEALING_KINDS.includes(v.fx), GENERALS[gid].tactic.shape === "heal", gid);
-    assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 2400, gid);
+    assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 3500, gid);
+    assert.ok(castAt(v) >= 0 && castAt(v) < HIT, `${gid}: the general must strike before the blow lands`);
   }
   assert.equal(Object.keys(BEASTS).length, 7);
   assert.equal(VFX.guanyu.beast, "shenlong");   // Guan Yu's dragon is painted art; its glory is drawn round it

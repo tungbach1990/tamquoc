@@ -164,7 +164,7 @@ async function demoScreen(id) {
   view = createBattleView(cv, result, {
     chapter: 5, quiet: true,
     onLog(text, cls) { const d = document.createElement("div"); d.className = cls; d.textContent = text; logEl.append(d) },
-    onDone() { logEl.append(Object.assign(document.createElement("div"), { className: "round", textContent: "Hết. Bấm ↻ để xem lại." })) },
+    onDone() { logEl.append(Object.assign(document.createElement("div"), { className: "round done", textContent: "Hết. Bấm ↻ để xem lại." })) },
   });
 }
 
