@@ -1,0 +1,1181 @@
+{
+  "frames": [
+    {
+      "duration": 83,
+      "filename": "attack/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/004.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 652,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/005.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 815,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/006.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 978,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "attack/007.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1141,
+        "y": 0
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 17,
+      "filename": "die/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 139
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "idle/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 278
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "idle/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 278
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "idle/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 278
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "idle/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 278
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/004.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 652,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "walk/005.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 815,
+        "y": 417
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_attack/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 556
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_attack/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 556
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_attack/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 556
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_attack/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 556
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_attack/004.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 652,
+        "y": 556
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/004.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 652,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/005.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 815,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/006.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 978,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/007.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1141,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_gather/008.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1304,
+        "y": 695
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/000.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/001.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 163,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/002.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 326,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/003.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 489,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/004.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 652,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/005.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 815,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/006.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 978,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/007.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1141,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/008.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1304,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/009.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1467,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/010.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1630,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/011.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1793,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/012.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 1956,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/013.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 2119,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/014.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 2282,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/015.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 2445,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/016.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 2608,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    },
+    {
+      "duration": 83,
+      "filename": "jls_skill/017.png",
+      "frame": {
+        "h": 139,
+        "w": 163,
+        "x": 2771,
+        "y": 834
+      },
+      "rotated": false,
+      "sourceSize": {
+        "h": 139,
+        "w": 163
+      },
+      "spriteSourceSize": {
+        "h": 139,
+        "w": 163,
+        "x": 0,
+        "y": 0
+      },
+      "trimmed": false
+    }
+  ],
+  "meta": {
+    "app": "Sprite Reskin",
+    "format": "RGBA8888",
+    "frameTags": [
+      {
+        "direction": "forward",
+        "from": 0,
+        "name": "attack",
+        "to": 7
+      },
+      {
+        "direction": "forward",
+        "from": 8,
+        "name": "die",
+        "to": 8
+      },
+      {
+        "direction": "forward",
+        "from": 9,
+        "name": "idle",
+        "to": 12
+      },
+      {
+        "direction": "forward",
+        "from": 13,
+        "name": "walk",
+        "to": 18
+      },
+      {
+        "direction": "forward",
+        "from": 19,
+        "name": "jls_attack",
+        "to": 23
+      },
+      {
+        "direction": "forward",
+        "from": 24,
+        "name": "jls_gather",
+        "to": 32
+      },
+      {
+        "direction": "forward",
+        "from": 33,
+        "name": "jls_skill",
+        "to": 50
+      }
+    ],
+    "image": "sheet.png",
+    "scale": "1",
+    "size": {
+      "h": 973,
+      "w": 2934
+    },
+    "version": "1"
+  }
+}
