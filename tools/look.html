@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- See a tactic's effect as text, for whoever (or whatever) can't look at the picture: one frame of it is
+     drawn and turned into letters by colour.  Served by game/serve.mjs:
+       /tamquoc/tools/look.html?gid=guanyu&k=0.5              the whole field, 108 letters wide
+       ...&box=250,60,470,260&cols=110                         a part of it, closer
+       ...&layer=front|back|both   &dir=1|-1   &now=1234 (ms on the clock)   &min=0.3 (how solid a cell must be)
+     Letters: g G green (dark, bright) · Y gold · W white/ivory · c pale mint · R red · d dark · o other. -->
+<meta charset="utf-8">
+<title>look</title>
+<pre id="out" style="font: 9px/9px monospace">drawing…</pre>
+<script type="module">
+  import { VFX } from "../src/data/vfx.js";
+  import { GENERALS } from "../src/data/generals.js";
+  import { drawEffect } from "../src/vfx.js";
+  const q = new URLSearchParams(location.search), num = (k, d) => (q.has(k) ? +q.get(k) : d);
+  const gid = q.get("gid") ?? "guanyu", k = num("k", 0.5), dir = num("dir", 1), layer = q.get("layer") ?? "front", min = num("min", 0.3);
+  const W = 540, H = 600, [x0, y0, x1, y1] = (q.get("box") ?? `0,0,${W},${H}`).split(",").map(Number), cols = num("cols", 108);
+  const heal = GENERALS[gid].tactic.shape === "heal", side = (x) => (dir > 0 ? x : W - x);
+  const env = {
+    W, H, cfg: VFX[gid], who: GENERALS[gid].name, tactic: GENERALS[gid].tactic.name, dir, heal, now: num("now", 1000), beast: null,
+    caster: { x: side(226), y: 392, tall: 125, s: { ready: false } },
+    targets: (heal ? [[150, 262], [226, 392], [150, 522]] : [[390, 262], [390, 392], [390, 522]]).map(([x, y]) => ({ x: side(x), y, tall: 100 })),
+  };
+  const scale = 2, cv = Object.assign(document.createElement("canvas"), { width: W * scale, height: H * scale }), ctx = cv.getContext("2d");
+  ctx.scale(scale, scale);
+  for (const l of layer === "both" ? ["back", "front"] : [layer]) drawEffect(ctx, l, k, env);
+  const cw = (x1 - x0) / cols, ch = cw * 2, rows = Math.round((y1 - y0) / ch), px = ctx.getImageData(0, 0, cv.width, cv.height).data, lines = [];
+  for (let r = 0; r < rows; r++) {
+    let line = "";
+    for (let c = 0; c < cols; c++) {
+      let R = 0, G = 0, B = 0, A = 0, n = 0;
+      for (let y = Math.floor((y0 + r * ch) * scale); y < (y0 + (r + 1) * ch) * scale; y++) for (let x = Math.floor((x0 + c * cw) * scale); x < (x0 + (c + 1) * cw) * scale; x++) {
+        const i = (y * cv.width + x) * 4, a = px[i + 3] / 255; R += px[i] * a; G += px[i + 1] * a; B += px[i + 2] * a; A += a; n++;
+      }
+      if (A / n < min) { line += " "; continue }
+      R /= A; G /= A; B /= A;
+      line += G > 225 && G - R > 25 && B > 170 ? "c" : R > 215 && G > 215 && B > 170 ? "W" : R > 175 && G > 135 && B < 150 && R > B * 1.4 ? "Y" : R > 110 && G < R * 0.6 && B < R * 0.7 ? "R"
+        : G > R * 1.25 && G > B * 1.1 ? (G > 140 ? "G" : "g") : Math.max(R, G, B) < 80 ? "d" : "o";
+    }
+    lines.push(line.replace(/\s+$/, ""));
+  }
+  document.getElementById("out").textContent = `${gid} k=${k} dir=${dir} box=${x0},${y0},${x1},${y1}\n` + lines.join("\n");
+</script>

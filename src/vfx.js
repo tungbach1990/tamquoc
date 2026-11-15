@@ -19,7 +19,7 @@ import { BEASTS } from "./data/vfx.js";
 /** Where in the effect (0..1) the blow lands: the view applies the damage then. */
 export const HIT = 0.62;
 /** How long a kind of effect plays, in ms at normal speed: the ones with a creature or a long build-up get more. */
-export const effectMs = (cfg) => ({ beast: 1750, dragon: 1850, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
+export const effectMs = (cfg) => ({ beast: 1750, dragon: 2300, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
 
 const TAU = Math.PI * 2;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -34,6 +34,8 @@ const channels = (hex) => { const n = parseInt((hex.length === 4 ? hex.replace(/
 // a NaN alpha draws nothing; it must not make a bad colour, which a canvas throws on
 const rgba = (hex, a) => { const [r, g, b] = channels(hex); return `rgba(${r},${g},${b},${(a > 0 ? Math.min(1, a) : 0).toFixed(3)})` };
 /** The colour made darker (m < 1) or lighter (m > 1). */
+/** A colour k of the way from one to another. */
+const mix = (a, b, k) => { const p = channels(a), q = channels(b); return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * k)).join(",")})` };
 const tone = (hex, m) => { const [r, g, b] = channels(hex).map((v) => Math.max(0, Math.min(255, Math.round(v * m)))); return `rgb(${r},${g},${b})` };
 
 // ---------------- brushes ----------------
@@ -186,6 +188,144 @@ function run(k, from, mid, to, start = 0.12) {
   return { x: lerp(mid.x, to.x, u), y: lerp(mid.y, to.y, u), u: 1 };
 }
 
+// ---------------- the dragon ----------------
+const IVORY = "#fff6dc", GOLD = "#f2cf63";
+/** A tapering ribbon (a lock of mane, a fin, a flame): from (x, y) to (x + dx, y + dy), `w` wide at its root, bowed sideways by `bend`. */
+function ribbon(ctx, x, y, dx, dy, w, bend, fill) {
+  const len = Math.hypot(dx, dy) || 1, px = -dy / len, py = dx / len, mx = x + dx * 0.5 + px * bend, my = y + dy * 0.5 + py * bend;
+  ctx.beginPath(); ctx.moveTo(x + px * w / 2, y + py * w / 2);
+  ctx.quadraticCurveTo(mx + px * w * 0.4, my + py * w * 0.4, x + dx, y + dy);
+  ctx.quadraticCurveTo(mx - px * w * 0.4, my - py * w * 0.4, x - px * w / 2, y - py * w / 2);
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+
+/** An eastern dragon in flight, seen from the side: its head is `head` along the curve through `way` (1 = the
+ *  second point, and so on) and the long body follows behind, a slow wave running down it. Nothing is drawn of
+ *  what has not yet left the first point, so it pours out of there. c: its scales; c2: mane and fins; gape: 0..1. */
+function drawDragon(ctx, way, head, env, c, c2, gape) {
+  const { dir, now } = env, N = 72, GAP = 0.045, dark = tone(c, 0.42), mid = mix(c, c2, 0.55), wave = (n) => Math.sin(now / 135 + n);
+  const girth = (t) => Math.max(2.5, 17 * Math.min(1, 0.62 + t * 2.6) * Math.pow(1 - Math.max(0, t - 0.2) / 0.8, 0.8));
+  // a place on the body: t runs toward the head, n toward the belly; the wave dies out at the neck so the head flies steady
+  const at = (u) => {
+    const a = spline(way, u), b = spline(way, u + 0.02), len = Math.hypot(b.x - a.x, b.y - a.y) || 1, tx = (b.x - a.x) / len, ty = (b.y - a.y) / len;
+    const nx = -ty * dir, ny = tx * dir, sway = Math.sin(u * 4.6 - now / 170) * 12 * Math.min(1, (head - u) / 0.45);
+    return { x: a.x + nx * sway, y: a.y + ny * sway, nx, ny, tx, ty, ang: Math.atan2(ty, tx) };
+  };
+  const body = [];
+  for (let i = 0; i <= N; i++) { const u = head - i * GAP; if (u <= 0.02) break; body.push(Object.assign(at(u), { r: girth(i / N), i })) }
+  if (body.length < 2) return;
+  const edge = (s, l) => [s.x + s.nx * s.r * l, s.y + s.ny * s.r * l];            // l: -1 the back, +1 the belly
+  const band = (a, b, fill) => {
+    ctx.beginPath();
+    body.forEach((s, j) => { const [x, y] = edge(s, a); ctx[j ? "lineTo" : "moveTo"](x, y) });
+    for (let j = body.length - 1; j >= 0; j--) { const [x, y] = edge(body[j], b); ctx.lineTo(x, y) }
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  };
+  const turned = (s, ang, len) => [(s.nx * Math.cos(ang) + s.tx * Math.sin(ang)) * len, (s.ny * Math.cos(ang) + s.ty * Math.sin(ang)) * len];   // 0: straight down from the belly; +: forward
+  const leg = (s, phase, near) => {
+    const swing = Math.sin(now / 170 + phase), a = -0.7 - 0.35 * swing, b = 0.6 + 0.3 * swing, hip = edge(s, near ? 0.5 : 0.25);
+    const th = turned(s, a, 15), knee = [hip[0] + th[0], hip[1] + th[1]], sh = turned(s, b, 15), foot = [knee[0] + sh[0], knee[1] + sh[1]];
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const [w1, w2, paint] of [[11.5, 8.5, dark], [8.5, 5.5, near ? c : tone(c, 0.66)]]) {
+      ctx.strokeStyle = paint;
+      ctx.lineWidth = w1; ctx.beginPath(); ctx.moveTo(hip[0], hip[1]); ctx.lineTo(knee[0], knee[1]); ctx.stroke();
+      ctx.lineWidth = w2; ctx.beginPath(); ctx.moveTo(knee[0], knee[1]); ctx.lineTo(foot[0], foot[1]); ctx.stroke();
+    }
+    ctx.strokeStyle = near ? IVORY : "#cfc3a0"; ctx.lineWidth = 2;                 // four hooked talons
+    for (const spread of [-0.8, -0.3, 0.25, 0.8]) {
+      const p1 = turned(s, b + spread, 5.5), p2 = turned(s, b + spread * 1.7 + 0.5, 10);
+      ctx.beginPath(); ctx.moveTo(foot[0], foot[1]); ctx.quadraticCurveTo(foot[0] + p1[0], foot[1] + p1[1], foot[0] + p2[0], foot[1] + p2[1]); ctx.stroke();
+    }
+  };
+  const fore = body.find((s) => s.i === 12), hind = body.find((s) => s.i === 37), end = body[body.length - 1];
+
+  // mist parting round it, and its own light
+  for (let j = 0; j < 9; j++) { const u = head - 0.3 - j * 0.34; if (u <= 0.05) break; const s = at(u), side = j % 2 ? 1 : -1; glow(ctx, s.x + s.nx * side * (22 + 12 * rnd(j, 1)) - s.tx * 10, s.y + s.ny * side * (22 + 12 * rnd(j, 1)) - s.ty * 10, 26 + rnd(j, 2) * 18, "#eafff6", 0.2) }
+  lit(ctx, () => { for (const s of body) if (s.i % 6 === 3) glow(ctx, s.x, s.y, s.r * 3.2, c, 0.2) });
+
+  if (hind) leg(hind, Math.PI, false);
+  if (fore) leg(fore, Math.PI + 1.4, false);
+  // the fin down its back: a row of flames leaning to the tail
+  ctx.beginPath();
+  for (const s of body) {
+    if (s.i % 2 || s.i < 2 || s.i > N - 5) continue;
+    const h = (7 + s.r * 0.85) * (0.85 + 0.15 * wave(s.i * 0.8)), [bx, by] = edge(s, -0.8);
+    ctx.moveTo(bx + s.tx * 5, by + s.ty * 5);
+    ctx.quadraticCurveTo(bx - s.nx * h * 0.8 + s.tx * 2, by - s.ny * h * 0.8 + s.ty * 2, bx - s.nx * h - s.tx * h, by - s.ny * h - s.ty * h);
+    ctx.quadraticCurveTo(bx - s.nx * h * 0.25 - s.tx * 5, by - s.ny * h * 0.25 - s.ty * 5, bx - s.tx * 6, by - s.ty * 6);
+    ctx.closePath();
+  }
+  ctx.fillStyle = c2; ctx.fill(); ctx.strokeStyle = tone(c, 0.6); ctx.lineWidth = 1; ctx.stroke();
+  // the plume of its tail
+  if (end.i === N) for (let j = 0; j < 5; j++) {
+    const fan = (j - 2) * 0.34 + wave(j) * 0.12, len = 30 + (2 - Math.abs(j - 2)) * 10;
+    ribbon(ctx, end.x, end.y, -(end.tx * Math.cos(fan) - end.nx * Math.sin(fan)) * len, -(end.ty * Math.cos(fan) - end.ny * Math.sin(fan)) * len, 9, wave(j * 1.7) * 5, j % 2 ? c2 : GOLD);
+  }
+  // the body: a dark rim that glows, the scales' green, a sheen along the back, the golden belly darker underneath
+  ctx.save(); ctx.shadowColor = c; ctx.shadowBlur = 16; band(-1, 1, dark); ctx.restore();
+  band(-0.88, 0.9, c);
+  band(-0.74, -0.34, "rgba(255,255,255,0.2)");
+  band(0.3, 0.9, GOLD);
+  band(0.66, 0.9, "#c99a2e");
+  ctx.beginPath();                                                                  // the belly's plates
+  for (const s of body) if (s.i % 2 === 0) { const [x0, y0] = edge(s, 0.32), [x1, y1] = edge(s, 0.88); ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2 - s.tx * 2.5, (y0 + y1) / 2 - s.ty * 2.5, x1, y1) }
+  ctx.strokeStyle = "rgba(120,72,10,0.55)"; ctx.lineWidth = 1.1; ctx.stroke();
+  ctx.beginPath();                                                                  // scales: rows of small arcs, their round edge to the tail
+  for (const s of body) {
+    const rad = Math.max(1.6, s.r * 0.3), back = s.ang + Math.PI;
+    for (const l of s.i % 2 ? [-0.62, -0.18] : [-0.4, 0.06]) { const [x, y] = edge(s, l); ctx.moveTo(x + Math.cos(back - 1.25) * rad, y + Math.sin(back - 1.25) * rad); ctx.arc(x, y, rad, back - 1.25, back + 1.25) }
+  }
+  ctx.strokeStyle = "rgba(0,46,28,0.5)"; ctx.lineWidth = 1.1; ctx.stroke();
+  if (hind) leg(hind, 0, true);
+  if (fore) leg(fore, 1.4, true);
+  lit(ctx, () => { for (let j = 0; j < 14; j++) { const s = body[(j * 5 + 2) % body.length], tw = Math.abs(Math.sin(now / 150 + j * 1.9)); glow(ctx, s.x - s.nx * (s.r + 8 + 10 * rnd(j, 4)), s.y - s.ny * (s.r + 8 + 10 * rnd(j, 4)), 2 + 4 * tw, "#ffffff", 0.9 * tw) } });
+
+  // ---- the head: +x runs out of its mouth, +y is its underside ----
+  const h = at(head), g = 0.14 + 0.42 * gape;                                       // g: how far the jaw hangs open, in radians
+  const antler = (ox, oy, paint) => {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const [extra, col] of [[2.2, "#5a3d14"], [0, paint]]) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 4.2 + extra; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(ox - 6, oy - 17, ox - 30, oy - 21); ctx.stroke();
+      ctx.lineWidth = 3 + extra; ctx.beginPath(); ctx.moveTo(ox - 7.7, oy - 11.5); ctx.quadraticCurveTo(ox - 7, oy - 20, ox - 2, oy - 27); ctx.moveTo(ox - 17.2, oy - 17.4); ctx.quadraticCurveTo(ox - 19, oy - 26, ox - 15, oy - 33); ctx.stroke();
+    }
+  };
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.ang); ctx.scale(1.5, 1.5 * dir);
+  antler(11, -15, "#cdb98a");                                                       // the far antler
+  for (let m = 0; m < 9; m++) ribbon(ctx, -3, -15 + m * 2.9, -(30 + 26 * Math.sin((m + 0.5) / 9 * Math.PI)), (m - 4) * 3.4 + wave(m) * 5, 7.5, wave(m + 2) * 5, m % 2 ? c2 : mid);   // the mane, streaming back
+  ctx.fillStyle = "#6e0d1a"; ctx.beginPath(); ctx.moveTo(8, 3); ctx.lineTo(54, -1); ctx.lineTo(6 + 46 * Math.cos(g) + Math.sin(g), 6 + 46 * Math.sin(g) - Math.cos(g)); ctx.lineTo(6, 8); ctx.closePath(); ctx.fill();   // the inside of the mouth
+  lit(ctx, () => glow(ctx, 36, 4 + 12 * g, 18, c2, 0.55 * gape));                   // its breath, when it bites
+  ctx.strokeStyle = "#ff6272"; ctx.lineWidth = 3.4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(13, 6); ctx.quadraticCurveTo(30, 6 + 24 * g, 43, 1 + 26 * g); ctx.stroke();   // the tongue
+  ctx.save(); ctx.translate(6, 6); ctx.rotate(g);                                   // the lower jaw swings on its hinge
+  ribbon(ctx, 30, 7, -17, 19 + wave(5) * 3, 6, wave(6) * 3, GOLD); ribbon(ctx, 23, 8, -22, 21 + wave(7) * 4, 7, wave(8) * 3, c2); ribbon(ctx, 15, 8.5, -19, 15 + wave(9) * 3, 6, wave(1) * 3, mid);   // the beard
+  ctx.beginPath(); ctx.moveTo(-4, -1); ctx.lineTo(40, -2); ctx.quadraticCurveTo(47, -4.5, 48.5, -1); ctx.quadraticCurveTo(47, 5, 38, 6.5); ctx.lineTo(8, 9); ctx.quadraticCurveTo(-4, 9, -6, 3); ctx.closePath();
+  ctx.fillStyle = tone(c, 0.86); ctx.fill(); ctx.strokeStyle = dark; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(43, 4.6); ctx.quadraticCurveTo(30, 8.2, 7, 8); ctx.stroke();
+  ctx.fillStyle = IVORY; for (const [x, tall] of [[41, 7.5], [33, 4.2], [26, 3.2]]) { ctx.beginPath(); ctx.moveTo(x - 2.2, -1.6); ctx.lineTo(x, -1.6 - tall); ctx.lineTo(x + 2.2, -1.6); ctx.closePath(); ctx.fill() }
+  ctx.restore();
+  ctx.beginPath(); ctx.moveTo(-8, -12);                                             // the skull: crown, brow, the long bridge, the nose's bump, the lip, the cheek
+  ctx.bezierCurveTo(-2, -19, 8, -20, 15, -17); ctx.quadraticCurveTo(21, -14.5, 24, -11.5); ctx.quadraticCurveTo(34, -8, 43, -10.5);
+  ctx.bezierCurveTo(48, -15, 57, -13, 57.5, -6.5); ctx.quadraticCurveTo(57.5, -1.5, 53, -0.5); ctx.quadraticCurveTo(40, 1.5, 30, 0.5);
+  ctx.quadraticCurveTo(18, 0, 9, 4.5); ctx.quadraticCurveTo(4, 9, -4, 9); ctx.quadraticCurveTo(-11, 2, -8, -12); ctx.closePath();
+  ctx.fillStyle = c; ctx.fill(); ctx.strokeStyle = dark; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.32)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(26, -9); ctx.quadraticCurveTo(35, -6.4, 43, -8.4); ctx.moveTo(47, -11.5); ctx.quadraticCurveTo(52, -13, 55, -9.5); ctx.stroke();
+  ctx.fillStyle = IVORY; for (const [x, tall] of [[50, 7.5], [43.5, 5], [37, 3.4], [31, 3], [25, 2.6]]) { ctx.beginPath(); ctx.moveTo(x - 2.3, 0.4); ctx.lineTo(x, 0.4 + tall); ctx.lineTo(x + 2.3, 0.4); ctx.closePath(); ctx.fill() }
+  for (let j = 0; j < 4; j++) ribbon(ctx, -1, 1 + j * 2.1, -16 - j * 2, 3 + j * 5 + wave(j + 4) * 2, 6, 2, j % 2 ? mid : c2);   // the frill behind the jaw
+  lit(ctx, () => glow(ctx, 17, -9.3, 14, "#ffe55c", 0.55));
+  dot(ctx, 16.5, -9.5, 6.2, "rgba(0,30,18,0.6)");
+  ctx.fillStyle = "#ffe55c"; ctx.beginPath(); ctx.ellipse(17, -9.3, 4.8, 3.3, -0.25, 0, TAU); ctx.fill();
+  ctx.fillStyle = "#1a0d00"; ctx.beginPath(); ctx.ellipse(17.6, -9.3, 1.2, 3, -0.1, 0, TAU); ctx.fill();
+  dot(ctx, 15.4, -10.6, 1, "#ffffff");
+  ribbon(ctx, 12, -16, -14, -6 + wave(2) * 2, 5, 2, c2); ribbon(ctx, 17, -17, -11, -10 + wave(3) * 2, 4.5, 2, mid);      // the brow's tufts
+  ctx.strokeStyle = dark; ctx.lineWidth = 3.2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(8, -15.5); ctx.quadraticCurveTo(17, -16.5, 25, -10.5); ctx.stroke();   // the scowl
+  ctx.fillStyle = dark; ctx.beginPath(); ctx.ellipse(52.5, -8, 2, 1.2, -0.5, 0, TAU); ctx.fill();
+  antler(6, -16, "#f3deb0");                                                        // the near antler
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath();   // two long whiskers, trailing in the wind
+  ctx.moveTo(54, -4); ctx.bezierCurveTo(72, -14, 52, -34 + wave(1) * 5, 16, -42 + wave(2) * 8);
+  ctx.moveTo(54, -1); ctx.bezierCurveTo(74, 10, 54, 30 + wave(3) * 5, 20, 38 + wave(4) * 8); ctx.stroke();
+  ctx.restore();
+}
+
 // ---------------- the cut-in ----------------
 /** The general's banner: a slanted band slides in from his side with his figure and the tactic's name. k: 0..1. */
 export function drawCutIn(ctx, k, env) {
@@ -259,74 +399,24 @@ const KINDS = {
 
   /** A long eastern dragon pours out of the blade, coils up over the field and dives through the enemy's line. */
   dragon(ctx, layer, k, env) {
-    const { cfg, dir, caster, W } = env, f = field(env), GOLD = "#f0c850", shown = span(k, 0.04, 0.1) * (1 - span(k, 0.93, 1));
+    const { cfg, dir, caster, W } = env, f = field(env), shown = span(k, 0.04, 0.1) * (1 - span(k, 0.93, 1));
     const tip = { x: caster.x + dir * 22, y: caster.y - caster.tall * 0.85 }, prey = { x: f.cx, y: f.cy - f.tall * 0.5 };
     if (layer === "back") {
       lit(ctx, () => {
         const cut = span(k, 0, 0.2);
         if (cut > 0 && cut < 1) { crescent(ctx, caster.x, caster.y - caster.tall * 0.5, 74, dir > 0 ? -0.5 : Math.PI + 0.5, 2.6 * easeOut(cut), 22, cfg.c, cfg.c2, 1 - cut); glow(ctx, tip.x, tip.y, 60, cfg.c2, 1 - cut) }
+        glow(ctx, tip.x, tip.y, 46, cfg.c2, 0.7 * shown * (1 - span(k, 0.5, HIT)));       // the gate it pours out of
         ctx.save(); ctx.translate(f.cx, f.cy); ctx.scale(1, 0.4); glow(ctx, 0, 0, 170, cfg.c, 0.5 * span(k, HIT - 0.15, HIT) * (1 - span(k, 0.85, 1))); ctx.restore();
       });
       return;
     }
     if (shown > 0) {
-      // the way it flies: out of the blade, up, over the middle, down through them, and away into the sky
-      const way = [tip, { x: caster.x + dir * 70, y: caster.y - 200 }, { x: W / 2, y: 140 }, { x: f.cx - dir * 60, y: Math.min(prey.y - 120, 210) }, prey,
+      // the way it flies: out of the blade, high over the middle, down through them, and away into the sky
+      const way = [tip, { x: caster.x + dir * 40, y: caster.y - 230 }, { x: W / 2, y: 112 }, { x: f.cx - dir * 30, y: Math.min(prey.y - 130, 190) }, prey,
         { x: f.cx + dir * 80, y: f.cy + 30 }, { x: f.cx + dir * 240, y: f.cy - 130 }, { x: f.cx + dir * 430, y: f.cy - 330 }];
-      const head = k <= HIT ? 4 * Math.pow(span(k, 0.06, HIT), 1.35) : 4 + 3.6 * easeOut(span(k, HIT, 1)), N = 46, GAP = 0.07;
-      // a place along the body: it snakes from side to side, the wave running down it; n points to the belly side
-      const at = (u) => {
-        const a = spline(way, u), b = spline(way, u + 0.02), tx = b.x - a.x, ty = b.y - a.y, len = Math.hypot(tx, ty) || 1;
-        const nx = -ty / len * dir, ny = tx / len * dir, sway = Math.sin(u * 4.6 - env.now / 150) * 11;
-        return { x: a.x + nx * sway, y: a.y + ny * sway, nx, ny, tx: tx / len, ty: ty / len, ang: Math.atan2(ty, tx) };
-      };
-      const girth = (i) => (4 + 15 * Math.pow(1 - i / N, 0.7)) * Math.min(1, 0.55 + i * 0.09);
-      ctx.save(); ctx.globalAlpha *= shown; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      // clouds part around it
-      for (let i = 0; i < 9; i++) { const u = head - 0.3 - i * 0.36; if (u > 0) { const s = at(u); dot(ctx, s.x - s.nx * 16 + (rnd(i, 1) - 0.5) * 30, s.y - s.ny * 16 + (rnd(i, 2) - 0.5) * 20, 20 + rnd(i, 3) * 14, "rgba(235,250,245,0.12)") } }
-      lit(ctx, () => { for (let i = 2; i < N; i += 4) { const u = head - i * GAP; if (u > 0) { const s = at(u); glow(ctx, s.x, s.y, girth(i) * 2.6, cfg.c, 0.2) } } });
-      // four short legs with claws, under the body
-      for (const i of [9, 27]) {
-        const u = head - i * GAP; if (u <= 0) continue;
-        const s = at(u), r = girth(i), reach = 14 + 5 * Math.sin(env.now / 120 + i);
-        for (const lead of [-7, 7]) {
-          const hx = s.x + s.nx * r * 0.5 + s.tx * lead, hy = s.y + s.ny * r * 0.5 + s.ty * lead, fx = hx + s.nx * reach - s.tx * 7, fy = hy + s.ny * reach - s.ty * 7;
-          ctx.strokeStyle = tone(cfg.c, 0.72); ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(fx, fy); ctx.stroke();
-          ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
-          for (const claw of [-0.6, 0, 0.6]) { ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + (s.nx * Math.cos(claw) - s.tx * Math.sin(claw)) * 7, fy + (s.ny * Math.cos(claw) - s.ty * Math.sin(claw)) * 7); ctx.stroke() }
-        }
-      }
-      // the body, tail first so that the head lies over it: back fin, scales, the golden belly
-      for (let i = N - 1; i >= 1; i--) {
-        const u = head - i * GAP; if (u <= 0) continue;
-        const s = at(u), r = girth(i);
-        if (i === N - 1) for (const fan of [-0.5, 0, 0.5]) streak(ctx, s.x, s.y, s.x - (s.tx * Math.cos(fan) - s.nx * Math.sin(fan)) * 30, s.y - (s.ty * Math.cos(fan) - s.ny * Math.sin(fan)) * 30, 5, cfg.c2, 0.9);   // the tuft of its tail
-        if (i % 2 === 0) { ctx.fillStyle = tone(cfg.c, 0.6); ctx.beginPath(); ctx.moveTo(s.x - s.nx * r * 0.7 + s.tx * 5, s.y - s.ny * r * 0.7 + s.ty * 5); ctx.lineTo(s.x - s.nx * (r + 9) - s.tx * 7, s.y - s.ny * (r + 9) - s.ty * 7); ctx.lineTo(s.x - s.nx * r * 0.7 - s.tx * 5, s.y - s.ny * r * 0.7 - s.ty * 5); ctx.closePath(); ctx.fill() }
-        dot(ctx, s.x, s.y, r, i % 2 ? cfg.c : tone(cfg.c, 0.82));
-        dot(ctx, s.x + s.nx * r * 0.45, s.y + s.ny * r * 0.45, r * 0.56, GOLD);
-        ctx.strokeStyle = "rgba(0,40,24,0.4)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(s.x, s.y, r * 0.9, s.ang - 1.1, s.ang + 1.1); ctx.stroke();
-      }
-      // the head: mane, antlers, long jaws that open as it strikes, whiskers streaming
-      const h = at(head), gape = 4 + 8 * (Math.abs(k - HIT) < 0.09 ? 1 : 0.5 + 0.5 * Math.sin(env.now / 110)), wave = (n) => Math.sin(env.now / 120 + n);
-      lit(ctx, () => glow(ctx, h.x, h.y, 70, cfg.c2, 0.45));
-      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.ang); ctx.scale(1.3, 1.3 * dir);   // +x runs out of its mouth, +y is its belly side
-      ctx.strokeStyle = cfg.c2; ctx.lineWidth = 4;
-      for (let m = 0; m < 7; m++) { ctx.beginPath(); ctx.moveTo(-2, -10 + m * 3); ctx.quadraticCurveTo(-22, -16 + m * 4 + wave(m) * 5, -46 - m * 3, -6 + m * 5 + wave(m + 3) * 7); ctx.stroke() }
-      ctx.strokeStyle = "#f6e7b0"; ctx.lineWidth = 3.2;
-      ctx.beginPath(); ctx.moveTo(2, -11); ctx.lineTo(-14, -30); ctx.lineTo(-30, -36); ctx.moveTo(-12, -28); ctx.lineTo(-8, -42); ctx.moveTo(8, -12); ctx.lineTo(-4, -32); ctx.lineTo(-18, -40); ctx.stroke();
-      dot(ctx, 0, 0, 15, cfg.c);
-      ctx.fillStyle = cfg.c; ctx.beginPath(); ctx.ellipse(8, -3, 19, 13, 0, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(14, -12); ctx.quadraticCurveTo(38, -14, 50, -6); ctx.lineTo(52, 0); ctx.lineTo(16, 3); ctx.closePath(); ctx.fill();
-      dot(ctx, 48, -7, 4.5, tone(cfg.c, 1.2));
-      ctx.fillStyle = "#8a1420"; ctx.beginPath(); ctx.moveTo(16, 3); ctx.lineTo(50, 1); ctx.lineTo(44, 4 + gape); ctx.lineTo(16, 8 + gape * 0.3); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = tone(cfg.c, 0.8); ctx.beginPath(); ctx.moveTo(14, 6 + gape * 0.3); ctx.lineTo(44, 4 + gape); ctx.lineTo(40, 9 + gape); ctx.lineTo(14, 13 + gape * 0.3); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "#ffffff"; for (const x of [24, 32, 40]) { ctx.beginPath(); ctx.moveTo(x, 2); ctx.lineTo(x + 3, 7); ctx.lineTo(x + 6, 2); ctx.closePath(); ctx.fill() }
-      ctx.strokeStyle = tone(cfg.c, 0.55); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(12, -13); ctx.lineTo(27, -11); ctx.stroke();
-      dot(ctx, 20, -7, 4.2, "#ffe066"); ctx.fillStyle = "#201000"; ctx.beginPath(); ctx.ellipse(20.5, -7, 1.2, 3.4, 0, 0, TAU); ctx.fill();
-      ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(48, -2); ctx.quadraticCurveTo(74, 4 + wave(1) * 6, 62, 30 + wave(2) * 8); ctx.moveTo(46, -4); ctx.quadraticCurveTo(70, -22 + wave(3) * 5, 84, -8 + wave(4) * 8); ctx.stroke();
-      ctx.strokeStyle = cfg.c2; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(26, 12 + gape); ctx.quadraticCurveTo(22, 26 + gape, 12, 30 + gape); ctx.stroke();
-      ctx.restore();
+      const head = k <= HIT ? 4 * Math.pow(span(k, 0.06, HIT), 1.35) : 4 + 3.6 * easeOut(span(k, HIT, 1));
+      ctx.save(); ctx.globalAlpha *= shown;
+      drawDragon(ctx, way, head, env, cfg.c, cfg.c2, Math.max(0.16 + 0.1 * Math.sin(env.now / 150), 1 - Math.abs(k - HIT) / 0.12));   // jaws nearly shut in flight, wide at the bite
       ctx.restore();
     }
     const flash = span(k, HIT, HIT + 0.12);

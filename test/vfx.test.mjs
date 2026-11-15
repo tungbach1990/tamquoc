@@ -48,7 +48,7 @@ test("every general has a tactic effect of a known kind; every beast is one gene
     assert.match(v.c, /^#[0-9a-f]{6}$/, gid); assert.match(v.c2, /^#[0-9a-f]{6}$/, gid);
     if (v.fx === "beast") { assert.ok(BEASTS[v.beast], `${gid}: no beast ${v.beast}`); assert.ok(["dash", "dive"].includes(v.move), gid); used.push(v.beast) }
     assert.equal(HEALING_KINDS.includes(v.fx), GENERALS[gid].tactic.shape === "heal", gid);
-    assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 2000, gid);
+    assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 2400, gid);
   }
   assert.equal(Object.keys(BEASTS).length, 6);
   // the ones the user named: Guan Yu's is a dragon drawn in code, Zhuge Liang calls wind and rain, Zhao Yun the white tiger
