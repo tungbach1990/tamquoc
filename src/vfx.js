@@ -285,11 +285,9 @@ const KINDS = {
     impacts(ctx, k, env, 1.3);
   },
 
-  /** Guan Yu lifts his blade and the Azure Dragon rises out of it to wheel round the sky; when the blade
-   *  falls, the dragon stoops on the enemy's column and runs it through from end to end. The dragon is painted
-   *  art (a spirit beast's sheet) flown along a path; the blade, the sky and the lance of light are drawn here. */
+  /** The head leads; the articulated body follows its flight, rather than rotating a rigid sprite. */
   dragon(ctx, layer, k, env) {
-    const { cfg, dir, caster, beast, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1.5;
+    const { cfg, dir, caster, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1;
     const hand = { x: caster.x + dir * 8, y: caster.y - caster.tall * 0.62 }, tip = { x: hand.x, y: hand.y - 74 };   // the blade, held straight up
     const C = { x: W / 2, y: 124 }, RX = 178, RY = 50;                              // the ring it flies in the sky
     // the enemy's column, in the order it will be run through
@@ -305,14 +303,73 @@ const KINDS = {
     const road = [P0, ...marks, { x: last.x + lead.x / ll * 300, y: last.y + lead.y / ll * 300 }];             // down through each of them, and out the far end
     const along = (kk) => { if (kk > HIT) return 1 + n * span(kk, HIT, EXIT); const s = span(kk, DIVE, HIT); return s * (0.4 + 0.6 * s) };
     const at = (kk) => (kk < DIVE ? wheel(kk) : spline(road, along(kk)));
-    // about 2.2 times its painted size at the strike (larger and the painting goes soft); small on the far side of its ring
-    const full = beast?.ready ? Math.min(175 / beast.h, 250 / beast.w) : 1;
-    const sizeAt = (kk) => { if (kk >= DIVE) return lerp(full * (0.5 + 0.3 * P0.near), full * 1.05, easeIn(span(kk, DIVE, HIT))); const w = wheel(kk); return full * (0.5 + 0.3 * w.near) * (0.3 + 0.7 * w.e) };
-    const shown = span(k, RISE, RISE + 0.05) * (1 - span(k, EXIT - 0.03, EXIT + 0.03)), far = k < DIVE && wheel(k).near < 0.5;
+    const full = 1;
+    const sizeAt = (kk) => { if (kk >= DIVE) return lerp(0.68 + 0.24 * P0.near, 1.12, easeIn(span(kk, DIVE, HIT))); const w = wheel(kk); return (0.68 + 0.24 * w.near) * (0.3 + 0.7 * w.e) };
+    const shown = span(k, RISE, RISE + 0.05) * (1 - span(k, EXIT + 0.01, EXIT + 0.12)), far = k < DIVE && wheel(k).near < 0.5;
     const dragonAt = (kk, alpha) => {
-      const p = at(kk), q = at(kk + 0.004), size = sizeAt(kk);
-      if (beast?.ready) fly(ctx, beast, animOf(beast, "walk"), env.now, p.x, p.y, q.x - p.x, q.y - p.y, size, alpha, kk < DIVE ? { lean: 0.5 } : { lean: 1, face: dir });
-      else lit(ctx, () => { glow(ctx, p.x, p.y, 64 * size / full, cfg.c2, alpha); glow(ctx, p.x, p.y, 24 * size / full, "#ffffff", alpha) });   // no art: a ball of light
+      const size = sizeAt(kk), time = kk * effectMs(cfg) / 1000, spine = [at(kk)];
+      // Fixed-length vertebrae follow delayed head positions; the travelling wave grows towards the tail.
+      // No frame history: seeking/replaying the tactic gives exactly the same pose.
+      for (let i = 1; i <= 44; i++) {
+        const t = kk - i * 0.0026, p = at(t), q = at(t + 0.001), l = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+        const wave = Math.sin(time * 9 - i * 0.32) * (3 + i * 0.27) * size;
+        const x = p.x - (q.y - p.y) / l * wave, y = p.y + (q.x - p.x) / l * wave;
+        const prev = spine[i - 1], dx = x - prev.x, dy = y - prev.y, d = Math.hypot(dx, dy) || 1;
+        spine.push({ x: prev.x + dx / d * 5.2 * size, y: prev.y + dy / d * 5.2 * size });
+      }
+      ctx.save(); ctx.globalAlpha *= alpha; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      const stroke = (points, color, width) => { ctx.beginPath(); points.forEach((p, i) => ctx[i ? "lineTo" : "moveTo"](p[0], p[1])); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke() };
+      const local = (i, draw) => {
+        const p = spine[i], q = spine[Math.min(44, i + 1)];
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.y - q.y, p.x - q.x)); ctx.scale(size, size); draw(); ctx.restore();
+      };
+      // Four hooked legs paddle and fold back as the dragon dives.
+      for (const i of [9, 23]) for (const side of [-1, 1]) local(i, () => {
+        const kick = Math.sin(time * 7 - i * 0.22 + side) * 5, tuck = span(kk, DIVE, HIT) * 8;
+        const foot = [-13 - tuck + kick, side * (24 - tuck)];
+        const leg = [[0, side * 5], [-6 + kick, side * 17], foot];
+        stroke(leg, "#062e2c", 7); stroke(leg, "#41b888", 4);
+        for (let toe = -1; toe <= 1; toe++) stroke([foot, [foot[0] + 7 + toe * 3, foot[1] + side * (4 + toe * 3)]], "#f3dda0", 1.7);
+      });
+      for (let i = 43; i >= 0; i--) {
+        const p = spine[i], q = spine[i + 1], radius = (1.1 + 8 * Math.pow(1 - i / 44, 0.65)) * size;
+        stroke([[q.x, q.y], [p.x, p.y]], "#073d36", radius * 2 + 3 * size);
+        stroke([[q.x, q.y - radius * 0.15], [p.x, p.y - radius * 0.15]], cfg.c, radius * 2);
+        stroke([[q.x, q.y + radius * 0.42], [p.x, p.y + radius * 0.42]], "#b7cf86", radius * 0.65);
+        if (i % 2 === 0) local(i, () => {
+          const r = radius / size, flutter = Math.sin(time * 12 - i * 0.6) * 3;
+          ctx.fillStyle = "#73e3b2"; ctx.beginPath(); ctx.moveTo(2, -r * 0.7); ctx.lineTo(-6, -r - 6 + flutter); ctx.lineTo(-5, -r * 0.35); ctx.fill();
+          stroke([[0, -r * 0.4], [-2, 0], [0, r * 0.35]], "#0c765b", 1.2);
+          dot(ctx, 1, -r * 0.45, 1, "#c6f5bc");
+        });
+      }
+      local(0, () => {
+        const breath = Math.sin(time * 8), roar = span(kk, DIVE - 0.04, HIT) * (1 - span(kk, EXIT, EXIT + 0.06));
+        // Swept mane, forked antlers, brows and a lower jaw opening on the strike.
+        for (let j = 0; j < 7; j++) {
+          const y = -12 + j * 4, flutter = Math.sin(time * 11 - j * 0.8) * 4;
+          stroke([[-3, y], [-17, y * 1.4 + flutter], [-29 - j % 3 * 3, y * 1.5 + flutter * 1.5]], j % 2 ? "#d9edbb" : "#57ca9c", 3);
+        }
+        for (const side of [-1, 1]) {
+          stroke([[-2, side * 8], [-10, side * 23], [-22, side * 27]], "#f4dda2", 3);
+          stroke([[-10, side * 23], [-8, side * 30]], "#f4dda2", 2);
+        }
+        ctx.fillStyle = "#0a4e40"; ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = "#4ac795"; ctx.beginPath(); ctx.ellipse(3, -3, 14, 9, 0, 0, TAU); ctx.fill();
+        stroke([[6, 5], [22, 8 + roar * 6]], "#b7d493", 6);
+        stroke([[8, 1], [24, 2]], "#82dfac", 10);
+        stroke([[9, 5], [23, 5]], "#07342e", 2);
+        for (const x of [13, 20]) stroke([[x, 5], [x - 1, 8 + roar * 2]], "#fff0c0", 1.8);
+        stroke([[-1, -8], [10, -7]], "#eddb9c", 3);
+        dot(ctx, 7, -5, 2.8, "#ffdf72"); dot(ctx, 8, -5, 1.1, "#142b26"); dot(ctx, 9, -6, 0.8, "#ffffff");
+        dot(ctx, 24, 0, 1.8, "#07342e");
+        for (const side of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(19, side * 4);
+          ctx.bezierCurveTo(28, side * 18, -17, side * 22 + breath * 5, -38, side * 13 + Math.sin(time * 9 - 1) * 7);
+          ctx.strokeStyle = "#e1f2c1"; ctx.lineWidth = 1.5; ctx.stroke();
+        }
+      });
+      ctx.restore();
     };
     const call = span(k, 0, 0.08) * (1 - span(k, DIVE + 0.02, DIVE + 0.12));       // while the blade is up, and through its fall
     if (layer === "back") {
@@ -360,7 +417,6 @@ const KINDS = {
     });
     if (shown > 0 && !far) {
       lit(ctx, () => { const p = at(k); glow(ctx, p.x, p.y, 120 * sizeAt(k) / full, cfg.c, 0.3 * shown) });
-      if (k >= DIVE) for (let j = 3; j >= 1; j--) dragonAt(Math.max(DIVE, k - j * 0.012), shown * (0.34 - j * 0.08));   // it blurs as it stoops
       dragonAt(k, shown);
     }
     // the lance of light it draws down the column behind it

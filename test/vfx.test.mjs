@@ -53,7 +53,7 @@ test("every general has a tactic effect of a known kind; every beast is one gene
     assert.ok(castAt(v) >= 0 && castAt(v) < HIT, `${gid}: the general must strike before the blow lands`);
   }
   assert.equal(Object.keys(BEASTS).length, 7);
-  assert.equal(VFX.guanyu.beast, "shenlong");   // Guan Yu's dragon is painted art; its glory is drawn round it
+  assert.equal(VFX.guanyu.beast, "shenlong");   // spirit identity is retained; the dragon effect articulates its own body
   // the ones the user named: Guan Yu's is a dragon drawn in code, Zhuge Liang calls wind and rain, Zhao Yun the white tiger
   assert.deepEqual([VFX.guanyu.fx, VFX.zhugeliang.fx, VFX.zhaoyun.beast, VFX.liubei.fx, VFX.nezha.fx], ["dragon", "storm", "baihu", "grace", "wheels"]);
   assert.deepEqual(used.sort(), Object.keys(BEASTS).sort());
@@ -78,7 +78,7 @@ test("every general's effect draws from start to end, both ways round, with and 
     // the blow shows: around the hit there is more on the canvas than at the very start
     const at = (k) => { const c = fakeCtx(); drawEffect(c, "front", k, env); return c.calls.length };
     assert.ok(at(HIT + 0.05) > 0, `${gid}: nothing drawn at the hit`);
-    if (art && VFX[gid].beast) assert.ok(ctx.calls.some((c) => c[0] === "drawImage"), `${gid}: the beast was never drawn`);
+    if (art && VFX[gid].fx === "beast") assert.ok(ctx.calls.some((c) => c[0] === "drawImage"), `${gid}: the beast was never drawn`);
   }
 });
 
@@ -94,6 +94,19 @@ test("an effect with a single target, or none, still holds together", () => {
   // a kind nobody wrote falls back to a slash
   const ctx = fakeCtx(); drawEffect(ctx, "front", HIT + 0.05, { ...env, cfg: { fx: "nope", c: "#ff0000", c2: "#ffffff" } });
   assert.ok(ctx.calls.length > 0);
+});
+
+test("Azure Dragon articulates without sprite art and replays the same pose", () => {
+  const env = { W: 540, H: 600, dir: 1, now: 0, cfg: VFX.guanyu, caster: { x: 226, y: 392, tall: 100 }, targets: [{ x: 390, y: 392, tall: 100 }], beast: null };
+  const pose = (k, now = 0) => { const ctx = fakeCtx(); for (const layer of ["back", "front"]) drawEffect(ctx, layer, k, { ...env, now }); return ctx.calls };
+  const bones = (calls) => calls.filter(([name]) => name === "rotate");
+  const a = bones(pose(0.35)), b = bones(pose(0.36));
+  assert.ok(a.length >= 20, "body has independently oriented vertebrae");
+  assert.ok(new Set(a.map((c) => c[1].toFixed(3))).size > 10, "body bends instead of rotating as one sprite");
+  assert.notDeepEqual(a, b, "body pose evolves with flight");
+  assert.deepEqual(a, bones(pose(0.35, 9999)), "body is driven by effect time, not wall clock");
+  assert.ok(!pose(0.35).some(([name]) => name === "drawImage"));
+  for (let i = 0; i <= 120; i++) assert.ok(sawNumbers(pose(i / 120)), `finite frame ${i}`);
 });
 
 test("a general given full morale opens with his tactic (the tactic preview relies on it)", () => {

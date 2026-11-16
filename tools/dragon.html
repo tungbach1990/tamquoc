@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quan Vũ · Thanh Long</title>
+<style>body{margin:0;background:#071b1c;color:#d7edce;font:15px system-ui;text-align:center}canvas{max-width:100%;max-height:85vh}button,input{margin:10px;accent-color:#63d6a4}button{padding:8px 16px} </style>
+<h2>Thanh Long Yển Nguyệt</h2>
+<button id="play">Tạm dừng</button><button id="mirror">Đổi hướng</button><input id="seek" aria-label="Tiến độ kỹ năng" type="range" min="0" max="1" step="0.001" value="0"><br>
+<canvas width="540" height="600"></canvas>
+<script type="module">
+import { drawEffect, effectMs } from '../src/vfx.js';
+import { VFX } from '../src/data/vfx.js';
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),seek=document.querySelector('#seek');
+let running=true,k=0,dir=1,last=performance.now();
+document.querySelector('#play').onclick=e=>{running=!running;e.target.textContent=running?'Tạm dừng':'Chạy tiếp'};
+document.querySelector('#mirror').onclick=()=>dir*=-1;
+seek.oninput=()=>{k=+seek.value;running=false;document.querySelector('#play').textContent='Chạy tiếp'};
+function frame(now){
+ if(running)k=(k+Math.min(50,now-last)/effectMs(VFX.guanyu))%1;last=now;seek.value=k;
+ const side=x=>dir>0?x:540-x;
+ const env={W:540,H:600,cfg:VFX.guanyu,dir,now:k*3400,caster:{x:side(226),y:392,tall:100},targets:[262,392,522].map(y=>({x:side(390),y,tall:100})),beast:null};
+ ctx.fillStyle='#18312e';ctx.fillRect(0,0,540,600);
+ drawEffect(ctx,'back',k,env);
+ for(const p of [env.caster,...env.targets]){ctx.fillStyle='#718578';ctx.fillRect(p.x-12,p.y-66,24,66);ctx.beginPath();ctx.arc(p.x,p.y-76,12,0,Math.PI*2);ctx.fill()}
+ drawEffect(ctx,'front',k,env);requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
