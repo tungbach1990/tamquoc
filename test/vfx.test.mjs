@@ -88,18 +88,37 @@ test("a sheet's faults are put right: an idle frame drawn off its place, a rider
 
 test("a general acts all through his tactic: he winds up, lets go by the time the blow lands, follows through", () => {
   for (const [gid, v] of Object.entries(VFX)) {
-    assert.equal(castPose(v, 0), 0, gid); assert.equal(castPose(v, 0.95), 1, gid);
-    assert.ok(castPose(v, HIT) >= 0.5 - 1e-9, `${gid}: his blow is not out when it lands`);
+    assert.equal(castPose(v, 0).at, 0, gid); assert.deepEqual(castPose(v, 0.95), { at: 1, lean: 0, step: 0 }, gid);
+    assert.ok(castPose(v, HIT).at >= 0.5 - 1e-9, `${gid}: his blow is not out when it lands`);
     for (let i = 0; i < 92; i++) {
-      const p = castPose(v, i / 100);
-      assert.ok(p >= 0 && p < 1, `${gid}: ${p} at ${i}%`);
-      const near = [1, 2, 3, 4].map((j) => castPose(v, i / 100 + j * 0.03));   // (he may come back to the same pose: a rearing horse does)
-      if (i < 85) assert.ok(Math.max(p, ...near) - Math.min(p, ...near) > 0.02, `${gid}: he stands still from ${i}%`);
+      const p = castPose(v, i / 100), near = [0, 1, 2, 3, 4].map((j) => castPose(v, i / 100 + j * 0.03).at);   // (he may come back to the same pose: a rearing horse does)
+      assert.ok(p.at >= 0 && p.at < 1, `${gid}: ${p.at} at ${i}%`);
+      if (i < 85) assert.ok(Math.max(...near) - Math.min(...near) > 0.02, `${gid}: he stands still from ${i}%`);
+      if (v.fx !== "dragon") assert.deepEqual([p.lean, p.step], [0, 0], gid);
     }
   }
-  // Guan Yu: his horse rears and settles while the dragon wheels; he has not cut before it stoops
+  // Guan Yu: his horse is up on its hind legs all the while the dragon wheels, and has not come down before it
+  // stoops; then it is down and he has lunged at them
   const guan = (k) => castPose(VFX.guanyu, k);
-  assert.ok(guan(0.23) > guan(0.15) && guan(0.31) < guan(0.23) && guan(0.5) < 0.5 && guan(0.55) >= 0.5);
+  for (const k of [0.08, 0.2, 0.3, 0.4, 0.5]) assert.ok(guan(k).lean > 0.15 && guan(k).at < 0.5, `rearing at ${k}`);
+  assert.ok(guan(0.56).lean === 0 && guan(0.56).step > 20 && guan(0.56).at >= 0.5);
+});
+
+test("Guan Yu whirls his blade right round over his head, turn for turn with the dragon, then brings it down in front", () => {
+  // the blade's point is where its trail starts: the first stroke of its widest width
+  const env = { W: 540, H: 600, dir: 1, now: 0, cfg: VFX.guanyu, caster: { x: 226, y: 392, tall: 125 }, targets: [262, 392, 522].map((y) => ({ x: 390, y, tall: 100 })), beast: null };
+  const point = (k) => {
+    const ctx = fakeCtx(); let at = null, path = [];
+    const real = { beginPath: () => (path = []), moveTo: (x, y) => path.push([x, y]), stroke: () => { if (!at && path.length === 1 && ctx.lineWidth > 9 && ctx.lineWidth < 16) at = path[0] } };
+    drawEffect(new Proxy(ctx, { get: (t, p) => real[p] ?? t[p], set: (t, p, v) => { t[p] = v; return true } }), "front", k, env);
+    return at;
+  };
+  const xs = [], ys = [];
+  for (let k = 0.14; k < 0.5; k += 0.005) { const p = point(k); assert.ok(p, `no blade at ${k}`); xs.push(p[0]); ys.push(p[1]) }
+  const mid = (Math.max(...xs) + Math.min(...xs)) / 2, passes = xs.filter((x, i) => i && (xs[i - 1] < mid) !== (x < mid)).length;   // times it passes over him: twice a turn
+  assert.ok(Math.max(...xs) - Math.min(...xs) > 170 && Math.max(...ys) - Math.min(...ys) > 50, "a wide wheel, seen from the side");
+  assert.ok(passes >= 3, `it passes over him ${passes} time(s)`);
+  assert.ok(Math.max(...ys) < 392 - 125 + 40, "the wheel is over his head");
 });
 
 test("every general's effect draws from start to end, both ways round, with and without art", () => {

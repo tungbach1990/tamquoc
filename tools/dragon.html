@@ -9,7 +9,7 @@
 <button id="play">Tạm dừng</button><button id="mirror">Đổi hướng</button><input id="seek" aria-label="Tiến độ kỹ năng" type="range" min="0" max="1" step="0.001" value="0"><br>
 <canvas width="540" height="600"></canvas>
 <script type="module">
-  import { drawEffect, effectMs, castPose } from "./src/vfx.js";
+  import { drawEffect, effectMs, castPose, HIND } from "./src/vfx.js";
   import { VFX } from "./src/data/vfx.js";
   import { loadManifest, sprite, drawSprite, animOf, animLength } from "./src/sprites.js";
   const canvas = document.querySelector("canvas"), ctx = canvas.getContext("2d"), seek = document.querySelector("#seek"), play = document.querySelector("#play"), cfg = VFX.guanyu;
@@ -28,9 +28,12 @@
     drawEffect(ctx, "back", k, env);
     for (const t of env.targets) if (foe.ready) drawSprite(ctx, foe, "idle", ms, t.x, t.y, { scale: 100 / foe.h, faceRight: dir < 0 });
     if (guan.ready) {
-      // as the battle view does: the effect leads him through his skill, then he stands
-      const pose = castPose(cfg, k), anim = pose < 1 ? animOf(guan, "skill01") : "idle";
-      drawSprite(ctx, guan, anim, pose < 1 ? pose * (animLength(guan, anim) - 1) : ms, env.caster.x, env.caster.y, { scale: 125 / guan.h, faceRight: dir > 0, loop: pose >= 1 });
+      // as the battle view does: the effect leads him through his skill (frame, rearing, lunge), then he stands
+      const pose = castPose(cfg, k), cast = pose.at < 1, anim = cast ? animOf(guan, "skill01") : "idle", x = env.caster.x + dir * pose.step, y = env.caster.y;
+      ctx.save();
+      ctx.translate(x - dir * HIND, y); ctx.rotate(-dir * pose.lean); ctx.translate(dir * HIND - x, -y);
+      drawSprite(ctx, guan, anim, cast ? pose.at * (animLength(guan, anim) - 1) : ms, x, y, { scale: 125 / guan.h, faceRight: dir > 0, loop: !cast });
+      ctx.restore();
     }
     drawEffect(ctx, "front", k, env);
     requestAnimationFrame(frame);

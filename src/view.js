@@ -5,7 +5,7 @@ import { GENERALS } from "./data/generals.js";
 import { MAX_ROUNDS } from "./battle.js";
 import { sprite, drawSprite, drawPlaceholder, animOf, animLength } from "./sprites.js";
 import { VFX } from "./data/vfx.js";
-import { drawCutIn, drawEffect, effectMs, castPose, HIT } from "./vfx.js";
+import { drawCutIn, drawEffect, effectMs, castPose, HIT, HIND } from "./vfx.js";
 
 export const W = 540, H = 600;
 const ROW_Y = [262, 392, 522], COL_X = [[226, 150, 74], [314, 390, 466]];
@@ -23,7 +23,7 @@ export function createBattleView(canvas, result, opts = {}) {
   const ctx = canvas.getContext("2d");
   const units = new Map(result.units.map((u) => {
     const g = GENERALS[u.gid], home = slotPos(u.side, u.slot);
-    return [u.id, { ...u, g, home, dx: 0, anim: "walk", animT: 0, rate: 1, loop: true, dead: false, deadT: 0, hitT: 0, stun: false, s: sprite(u.gid) }];
+    return [u.id, { ...u, g, home, dx: 0, lean: 0, anim: "walk", animT: 0, rate: 1, loop: true, dead: false, deadT: 0, hitT: 0, stun: false, s: sprite(u.gid) }];
   }));
   const name = (id) => units.get(id).g.name;
   const log = (text, cls = "") => opts.onLog?.(text, cls);
@@ -114,10 +114,11 @@ export function createBattleView(canvas, result, opts = {}) {
       evT += dt;
       if (show) {
         show.env.now = clock;
-        // his effect leads the general through his skill: where it is, so is he; when it lets him go he stands again
+        // his effect leads the general through his skill: where it is, so is he (which frame, how far his horse
+        // rears, how far he lunges); when it lets him go he stands again
         const u = units.get(ev.id), k = (evT - T.cut) / show.ms, pose = castPose(show.env.cfg, k), a = u.s.ready && animOf(u.s, "skill01");
-        if (k >= 0 && pose < 1 && a) { show.cast = true; u.anim = a; u.loop = false; u.rate = 0; u.animT = pose * (animLength(u.s, a) - 1) }
-        else if (show.cast) { show.cast = false; play(u, "idle", true) }
+        if (k >= 0 && pose.at < 1 && a) { show.cast = true; u.anim = a; u.loop = false; u.rate = 0; u.animT = pose.at * (animLength(u.s, a) - 1); u.lean = pose.lean; u.dx = (u.side ? -1 : 1) * pose.step }
+        else if (show.cast) { show.cast = false; u.lean = 0; u.dx = 0; play(u, "idle", true) }
       } else if (ev.t === "act") {
         // foot and horse step up to strike; archers and strategists stay put
         const u = units.get(ev.id), melee = (u.g.type === "B" || u.g.type === "K") && ev.hits.length;
@@ -182,7 +183,11 @@ export function createBattleView(canvas, result, opts = {}) {
       ctx.beginPath(); ctx.ellipse(x, y, 24, 7, 0, 0, Math.PI * 2); ctx.fillStyle = `rgba(0,0,0,${0.28 * fade})`; ctx.fill();
       if (u.s.ready) {
         const noFall = u.dead && !animOf(u.s, "die");
+        const face = u.side ? -1 : 1;
+        ctx.save();
+        if (u.lean) { ctx.translate(x - face * HIND, y); ctx.rotate(-face * u.lean); ctx.translate(face * HIND - x, -y) }   // rearing: turned about its hind hooves
         drawSprite(ctx, u.s, u.anim, u.animT, x, y, { scale: tallOf(u) / u.s.h, faceRight: u.side === 0, loop: u.loop, alpha: noFall ? fade * 0.6 : fade });
+        ctx.restore();
       } else drawPlaceholder(ctx, u.g, x, y, { alpha: fade });
       if (u.hitT > 0) { ctx.beginPath(); ctx.arc(x, y - tallOf(u) * 0.55, 10 + (220 - u.hitT) / 9, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255,255,255,${u.hitT / 220})`; ctx.lineWidth = 3; ctx.stroke() }
     }
@@ -233,7 +238,7 @@ export function createBattleView(canvas, result, opts = {}) {
     /** Jump to the end: every event still to come lands at once. */
     skip() {
       if (finished) return;
-      for (const u of units.values()) u.dx = 0;
+      for (const u of units.values()) { u.dx = 0; u.lean = 0 }
       if (phase === "intro") evI = 0;
       else if (applied) evI++;
       for (; evI < result.events.length; evI++) apply(result.events[evI], true);
