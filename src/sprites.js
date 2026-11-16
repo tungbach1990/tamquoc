@@ -37,7 +37,7 @@ export function sprite(id, kind = "generals") {
       c.width = img.width; c.height = img.height;
       const g = c.getContext("2d", { willReadFrequently: true });
       g.drawImage(img, 0, 0);
-      Object.assign(s, analyze(g.getImageData(0, 0, c.width, c.height).data, c.width, json), { img, ready: true });
+      Object.assign(s, analyze(g.getImageData(0, 0, c.width, c.height).data, c.width, json, { steady: kind === "generals" }), { img, ready: true });
       const forced = (kind === "beasts" ? BEASTS : GENERALS)[id]?.facing;
       if (forced) s.facing = forced;
     } catch (e) { s.missing = true; console.warn(`sprite ${kind}/${id}:`, e.message) }
@@ -69,14 +69,14 @@ function frameAt(s, name, ms, loop) {
   return s.frames[t.to];
 }
 
-/** Draw a ready sprite with its feet at (x, y). */
+/** Draw a ready sprite with its feet at (x, y): each frame on its own feet and at its own size (see analyze). */
 export function drawSprite(ctx, s, name, ms, x, y, { scale = 1, faceRight = true, loop = true, alpha = 1 } = {}) {
   const f = frameAt(s, name, ms, loop), flip = mustFlip(s.facing, faceRight);
   ctx.save();
   ctx.globalAlpha *= alpha;
   ctx.translate(x, y);
-  ctx.scale(flip ? -scale : scale, scale);
-  ctx.drawImage(s.img, f.x, f.y, f.w, f.h, -s.ax, -s.ay, f.w, f.h);
+  ctx.scale((flip ? -scale : scale) * f.k, scale * f.k);
+  ctx.drawImage(s.img, f.x, f.y, f.w, f.h, -f.ax, -f.ay, f.w, f.h);
   ctx.restore();
 }
 

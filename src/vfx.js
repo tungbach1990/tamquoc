@@ -20,9 +20,26 @@ import { BEASTS } from "./data/vfx.js";
 export const HIT = 0.62;
 /** How long a kind of effect plays, in ms at normal speed: the ones with a creature or a long build-up get more. */
 export const effectMs = (cfg) => ({ beast: 1750, dragon: 3400, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
-/** When in the effect (0..1) the general's own strike animation starts: at once, except where he first calls
- *  something up and strikes later (Guan Yu holds his blade up while the dragon wheels, then cuts). */
-export const castAt = (cfg) => ({ dragon: 0.46 })[cfg.fx] ?? 0;
+/** The beats of Guan Yu's dragon: it comes out of the blade, it stoops, it has run the column through. */
+const DRAGON = { RISE: 0.07, DIVE: 0.54, EXIT: 0.76 };
+// ponytail: where in a skill animation the arm is drawn back furthest and where the blow goes out, measured on
+// the riders' rig (frames 3 and 5 of 11) and taken for every rig; one that strikes elsewhere needs its own pair.
+const APEX = 0.3, BLOW = 0.5;
+// When in an effect (0..1) the general lets go: read by hand off each kind's own timings below (the arrows
+// leave the bow at 0.36, the beast springs at 0.42...), so a kind whose launch is moved must be moved here too.
+// A kind not listed strikes as the blow lands.
+const RELEASE = { arrows: 0.36, beast: 0.42, fire: 0.1, dark: 0.1, wheels: 0.12, charm: 0.12, charge: 0.12, thunder: 0.15, roar: 0.15 };
+// Guan Yu: the blade goes up as the dragon comes out, his horse rears and settles three times while it wheels
+// (at about the pace the frames were drawn for), he cuts as it stoops and holds the cut while it runs them through
+const POSES = { dragon: [[0, 0], [DRAGON.RISE, APEX], [0.15, 0.02], [0.23, APEX], [0.31, 0.02], [0.39, APEX], [0.45, 0.02], [DRAGON.DIVE - 0.04, APEX], [DRAGON.DIVE, BLOW], [DRAGON.EXIT, BLOW + 0.1], [0.92, 1]] };
+/** How far through his skill animation (0 its first frame .. 1 its end) the general is at k of his effect. The
+ *  effect leads him: he winds up, lets go when it does, and is still following through as it fades, so he
+ *  never stands idle under his own tactic. At 1 he is done and may stand again. */
+export function castPose(cfg, k) {
+  const keys = POSES[cfg.fx] ?? [[0, 0], [RELEASE[cfg.fx] ?? HIT, BLOW], [0.92, 1]];
+  for (let i = 1; i < keys.length; i++) if (k < keys[i][0]) return lerp(keys[i - 1][1], keys[i][1], span(k, keys[i - 1][0], keys[i][0]));
+  return 1;
+}
 
 const TAU = Math.PI * 2;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -401,20 +418,22 @@ const KINDS = {
     impacts(ctx, k, env, 1.3);
   },
 
-  /** Guan Yu lifts his blade and the Azure Dragon pours out of its point to wheel round the sky; it roars, and
-   *  when the blade falls it stoops on the enemy's column and runs it through from end to end, its whole length
-   *  following. The dragon is drawn here (spiritDragon), laid back along the road its head has flown. */
+  /** Guan Yu lifts his blade and the Azure Dragon pours out of its point. He swings the blade round over his
+   *  head and the dragon wheels round the sky after it; it roars, and when the blade falls it stoops on the
+   *  enemy's column and runs it through from end to end, its whole length following. The dragon is drawn here
+   *  (spiritDragon), laid back along the road its head has flown; Guan Yu's own figure keeps time (POSES). */
   dragon(ctx, layer, k, env) {
-    const { cfg, dir, caster, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1, time = k * effectMs(cfg) / 1000;
-    const hand = { x: caster.x + dir * 8, y: caster.y - caster.tall * 0.62 }, tip = { x: hand.x, y: hand.y - 74 };   // the blade, held straight up
+    const { cfg, dir, caster, W, H } = env, { RISE, DIVE, EXIT } = DRAGON, TURNS = 1, LEAD = 0.02, time = k * effectMs(cfg) / 1000;
+    const hand = { x: caster.x + dir * 8, y: caster.y - caster.tall * 0.62 }, tip = { x: hand.x, y: hand.y - 72 };   // the blade, held straight up
     const C = { x: W / 2, y: 120 }, RX = 178, RY = 64;                              // the ring it flies in the sky
     // the enemy's column, in the order it will be run through
     const marks = [...env.targets].sort((a, b) => a.y - b.y || (a.x - b.x) * dir).map((t) => ({ x: t.x, y: t.y - t.tall * 0.5, t }));
     const n = marks.length, first = marks[0], last = marks[n - 1], passes = (i) => HIT + (EXIT - HIT) * i / n;
     // it wheels over the far side toward the enemy, and leaves the ring there, a little short of the column
     const phiD = -Math.acos(Math.max(-0.9, Math.min(0.95, ((first.x - C.x) * dir - 50) / RX)));
+    const around = (kk) => phiD - TURNS * TAU * (DIVE - kk) / (DIVE - RISE);        // where round the ring it is
     const wheel = (kk) => {
-      const e = easeOut(span(kk, RISE, RISE + 0.16)), ph = phiD - TURNS * TAU * (DIVE - kk) / (DIVE - RISE);   // e: it spirals up out of the blade
+      const e = easeOut(span(kk, RISE, RISE + 0.16)), ph = around(kk);              // e: it spirals up out of the blade
       return { x: lerp(tip.x, C.x, e) + dir * RX * e * Math.cos(ph), y: lerp(tip.y, C.y, e) + RY * e * Math.sin(ph), near: (Math.sin(ph) + 1) / 2, e };
     };
     const P0 = wheel(DIVE), lead = n > 1 ? { x: last.x - marks[n - 2].x, y: last.y - marks[n - 2].y } : { x: dir * 40, y: 280 }, ll = Math.hypot(lead.x, lead.y) || 1;
@@ -449,13 +468,18 @@ const KINDS = {
     };
     const dragonAt = (kk, alpha) => spiritDragon(ctx, spine(kk), { t: time, c: cfg.c, c2: cfg.c2, a: alpha * 0.92, reach: span(kk, DIVE, HIT), roar: span(kk, DIVE - 0.07, DIVE - 0.01) * (1 - span(kk, EXIT + 0.04, EXIT + 0.12)) });
     const call = span(k, 0, 0.08) * (1 - span(k, DIVE + 0.02, DIVE + 0.12));       // while the blade is up, and through its fall
+    // the blade of light in his hand. Its point goes round the dragon's own ring made small, a little ahead of
+    // the dragon (LEAD): where the blade points, the dragon comes. Then it falls on the enemy.
+    const swing = span(k, RISE, RISE + 0.1), ahead = around(k + LEAD), up = { x: 44 * swing * Math.cos(ahead), y: -72 + 14 * swing * Math.sin(ahead) };
+    const fall = easeIn(span(k, DIVE - 0.03, DIVE + 0.04)), ang = lerp(Math.atan2(up.y, up.x), 0.55, fall), len = lerp(Math.hypot(up.x, up.y), 74, fall) * easeOut(span(k, 0, 0.08));
+    const bx = hand.x + dir * Math.cos(ang) * len, by = hand.y + Math.sin(ang) * len;
     if (layer === "back") {
       const a = span(k, 0, 0.1) * (1 - span(k, 0.9, 1));
       ctx.fillStyle = `rgba(3,16,18,${(0.55 * a).toFixed(3)})`; ctx.fillRect(0, 0, W, H);
       lit(ctx, () => {
         // the lifted blade opens the sky: a shaft of light from its point
         const shaft = call * (1 - span(k, DIVE - 0.04, DIVE));
-        if (shaft > 0) { const g = ctx.createLinearGradient(0, tip.y, 0, 0), w = 8 + 22 * shaft + 4 * Math.sin(env.now / 90); g.addColorStop(0, rgba(cfg.c2, 0.75 * shaft)); g.addColorStop(1, rgba(cfg.c, 0)); ctx.fillStyle = g; ctx.fillRect(tip.x - w / 2, 0, w, tip.y) }
+        if (shaft > 0 && by > 0) { const g = ctx.createLinearGradient(0, by, 0, 0), w = 8 + 22 * shaft + 4 * Math.sin(env.now / 90); g.addColorStop(0, rgba(cfg.c2, 0.75 * shaft)); g.addColorStop(1, rgba(cfg.c, 0)); ctx.fillStyle = g; ctx.fillRect(bx - w / 2, 0, w, by) }
         ring(ctx, caster.x, caster.y, 26 + 70 * easeOut(span(k, 0, 0.14)), 4, cfg.c2, call * (1 - span(k, 0, 0.14)), 0.38);
         // the wake it leaves round the sky
         if (k > RISE && k < EXIT) for (let j = 1; j <= 16; j++) { const kk = k - j * 0.007; if (kk < RISE) break; const p = at(kk); glow(ctx, p.x, p.y, sizeAt(kk) * (50 - j * 2.6), j % 3 ? cfg.c : cfg.c2, 0.32 * shown * (1 - j / 16)) }
@@ -478,10 +502,8 @@ const KINDS = {
       return;
     }
     lit(ctx, () => {
-      // the blade of light: straight up while he calls, then swung down at the enemy
-      const fall = easeIn(span(k, DIVE - 0.03, DIVE + 0.04)), ang = -Math.PI / 2 + (Math.PI / 2 + 0.55) * fall, len = 74 * easeOut(span(k, 0, 0.08));
-      const bx = hand.x + dir * Math.cos(ang) * len, by = hand.y + Math.sin(ang) * len;
       if (call > 0) {
+        if (shown > 0 && k < DIVE) { const p = at(k); streak(ctx, p.x, p.y, bx, by, 2, cfg.c2, 0.6 * call * shown) }   // the thread from its point that the dragon is led by
         streak(ctx, hand.x, hand.y, bx, by, 7, cfg.c2, call); streak(ctx, hand.x, hand.y, bx, by, 2.5, "#ffffff", call);
         glow(ctx, bx, by, 24 + 8 * Math.sin(env.now / 70), cfg.c2, 0.9 * call); glow(ctx, bx, by, 9, "#ffffff", call);
         for (let i = 0; i < 12; i++) { const up = (env.now / 700 + i / 12) % 1, turn = env.now / 130 + i * 1.9; glow(ctx, caster.x + Math.cos(turn) * (34 - 22 * up), caster.y - up * (caster.tall + 70), 3 + 3 * (1 - up), i % 2 ? cfg.c : cfg.c2, call * (1 - up) * (1 - fall)) }   // wind winding up round him

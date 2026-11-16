@@ -5,7 +5,7 @@ import { GENERALS } from "./data/generals.js";
 import { MAX_ROUNDS } from "./battle.js";
 import { sprite, drawSprite, drawPlaceholder, animOf, animLength } from "./sprites.js";
 import { VFX } from "./data/vfx.js";
-import { drawCutIn, drawEffect, effectMs, castAt, HIT } from "./vfx.js";
+import { drawCutIn, drawEffect, effectMs, castPose, HIT } from "./vfx.js";
 
 export const W = 540, H = 600;
 const ROW_Y = [262, 392, 522], COL_X = [[226, 150, 74], [314, 390, 466]];
@@ -28,7 +28,7 @@ export function createBattleView(canvas, result, opts = {}) {
   const name = (id) => units.get(id).g.name;
   const log = (text, cls = "") => opts.onLog?.(text, cls);
   let speed = 1, phase = "intro", clock = 0, evI = -1, evT = 0, applied = false, round = 0, raf = 0, last = 0, finished = false;
-  let floaters = [], show = null, shake = 0;   // show: the tactic on stage, { env, cast }
+  let floaters = [], show = null, shake = 0;   // show: the tactic on stage, { env, ms, cast: the general is held in his skill's pose }
 
   const play = (u, want, loop, fit) => {
     if (!u.s.ready) return;
@@ -114,9 +114,10 @@ export function createBattleView(canvas, result, opts = {}) {
       evT += dt;
       if (show) {
         show.env.now = clock;
-        // the general goes into his skill as the banner clears, or later when his effect has him wait
-        const wait = show.ms * castAt(show.env.cfg);
-        if (!show.cast && evT >= T.cut - 160 + wait) { show.cast = true; play(units.get(ev.id), "skill01", false, show.ms - wait - 150) }
+        // his effect leads the general through his skill: where it is, so is he; when it lets him go he stands again
+        const u = units.get(ev.id), k = (evT - T.cut) / show.ms, pose = castPose(show.env.cfg, k), a = u.s.ready && animOf(u.s, "skill01");
+        if (k >= 0 && pose < 1 && a) { show.cast = true; u.anim = a; u.loop = false; u.rate = 0; u.animT = pose * (animLength(u.s, a) - 1) }
+        else if (show.cast) { show.cast = false; play(u, "idle", true) }
       } else if (ev.t === "act") {
         // foot and horse step up to strike; archers and strategists stay put
         const u = units.get(ev.id), melee = (u.g.type === "B" || u.g.type === "K") && ev.hits.length;

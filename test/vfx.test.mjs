@@ -1,11 +1,11 @@
-// node --test tamquoc/test   (which way figures face; what every tactic looks like)
+// node --test tamquoc/test   (which way figures face and where they stand; what every tactic looks like)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { GENERALS, GENERAL_IDS } from "../src/data/generals.js";
 import { VFX, BEASTS, FX_KINDS, HEALING_KINDS } from "../src/data/vfx.js";
-import { drawEffect, drawCutIn, effectMs, castAt, EFFECT_KINDS, HIT } from "../src/vfx.js";
+import { drawEffect, drawCutIn, effectMs, castPose, EFFECT_KINDS, HIT } from "../src/vfx.js";
 import { drawSprite } from "../src/sprites.js";
-import { mustFlip } from "../src/spritemeta.js";
+import { mustFlip, analyze } from "../src/spritemeta.js";
 import { simulate } from "../src/battle.js";
 
 /** A canvas context that draws nothing and remembers what it was asked to do. */
@@ -22,7 +22,7 @@ function fakeCtx() {
   };
   return new Proxy(own, { get: (t, p) => (p in t ? t[p] : (...args) => { calls.push([p, ...args]) }), set: (t, p, v) => { t[p] = v; return true } });
 }
-const sheet = (facing = "left") => ({ ready: true, img: {}, facing, ax: 5, ay: 10, cx: 5, cy: 5, h: 10, w: 10, frames: [{ x: 0, y: 0, w: 10, h: 10, dur: 83 }], tags: { idle: { from: 0, to: 0 }, walk: { from: 0, to: 0 }, attack: { from: 0, to: 0 } } });
+const sheet = (facing = "left") => ({ ready: true, img: {}, facing, ax: 5, ay: 10, cx: 5, cy: 5, h: 10, w: 10, frames: [{ x: 0, y: 0, w: 10, h: 10, dur: 83, ax: 5, ay: 10, k: 1 }], tags: { idle: { from: 0, to: 0 }, walk: { from: 0, to: 0 }, attack: { from: 0, to: 0 } } });
 const sawNumbers = (calls) => calls.every((c) => c.slice(1).every((v) => typeof v !== "number" || Number.isFinite(v)));
 
 test("facing: a figure drawn facing left is mirrored on the left side of the field, and not on the right", () => {
@@ -50,13 +50,56 @@ test("every general has a tactic effect of a known kind; every beast is one gene
     if (v.fx === "beast") assert.ok(["dash", "dive"].includes(v.move), gid);
     assert.equal(HEALING_KINDS.includes(v.fx), GENERALS[gid].tactic.shape === "heal", gid);
     assert.ok(effectMs(v) >= 1200 && effectMs(v) <= 3500, gid);
-    assert.ok(castAt(v) >= 0 && castAt(v) < HIT, `${gid}: the general must strike before the blow lands`);
   }
   assert.equal(Object.keys(BEASTS).length, 7);
   assert.equal(VFX.guanyu.beast, "shenlong");   // the dragon is drawn in code; the name is the spirit's
   // the ones the user named: Guan Yu's is a dragon drawn in code, Zhuge Liang calls wind and rain, Zhao Yun the white tiger
   assert.deepEqual([VFX.guanyu.fx, VFX.zhugeliang.fx, VFX.zhaoyun.beast, VFX.liubei.fx, VFX.nezha.fx], ["dragon", "storm", "baihu", "grace", "wheels"]);
   assert.deepEqual(used.sort(), Object.keys(BEASTS).sort());
+});
+
+test("a sheet's faults are put right: an idle frame drawn off its place, a rider drawn bigger when he strikes", () => {
+  // a sheet of cells in a row, a block for the figure in each: [left, top, width, height]
+  const read = (cw, cells, tags, opts) => {
+    const ch = 123, sw = cw * cells.length, rgba = new Uint8Array(sw * ch * 4);
+    cells.forEach(([x0, y0, w, h], i) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) rgba[(y * sw + i * cw + x) * 4 + 3] = 255 });
+    const json = { frames: cells.map((c, i) => ({ frame: { x: i * cw, y: 0, w: cw, h: ch }, duration: 83 })), meta: { frameTags: Object.entries(tags).map(([name, [from, to]]) => ({ name, from, to })) } };
+    return analyze(rgba, sw, json, opts);
+  };
+  const still = [60, 40, 40, 70], big = [50, 30, 52, 91];                         // big: 1.3 times the size, standing lower in its cell
+  const cells = [still, still, [65, 34, 40, 70], [61, 40, 40, 70], still, still, big, big], tags = { idle: [0, 3], walk: [4, 5], attack: [6, 7] };
+  const feet = (s, i) => [s.frames[i].ax, s.frames[i].ay, +s.frames[i].k.toFixed(2)];
+  const rider = read(167, cells, tags, { steady: true });
+  assert.equal(rider.mounted, true);
+  assert.deepEqual([rider.ax, rider.ay, rider.h], [80, 110, 70]);
+  assert.deepEqual(feet(rider, 0), [80, 110, 1]);
+  assert.deepEqual(feet(rider, 2), [85, 104, 1], "a frame drawn 5 right and 6 up stands where the others do");
+  assert.deepEqual(feet(rider, 3), [80, 110, 1], "a pixel of sway is the animation's own");
+  assert.deepEqual(feet(rider, 4), [80, 110, 1], "an animation of the right size is left alone");
+  assert.deepEqual([feet(rider, 6), feet(rider, 7)], [[76, 121, 0.77], [76, 121, 0.77]], "the bigger rider is scaled back onto his own feet");
+  assert.deepEqual(feet(read(167, cells, tags), 2), [80, 110, 1], "a beast's bob is not taken out");
+  assert.deepEqual(feet(read(160, cells, tags, { steady: true }), 6), [80, 110, 1], "only riders are measured for size");
+  // and a frame is drawn on its own feet at its own size
+  const ctx = fakeCtx(), s = sheet(); Object.assign(s.frames[0], { ax: 7, ay: 9, k: 0.5 });
+  drawSprite(ctx, s, "idle", 0, 100, 100, { scale: 2, faceRight: false });
+  assert.deepEqual(ctx.calls.find((c) => c[0] === "scale"), ["scale", 1, 1]);
+  assert.deepEqual(ctx.calls.find((c) => c[0] === "drawImage").slice(6, 8), [-7, -9]);
+});
+
+test("a general acts all through his tactic: he winds up, lets go by the time the blow lands, follows through", () => {
+  for (const [gid, v] of Object.entries(VFX)) {
+    assert.equal(castPose(v, 0), 0, gid); assert.equal(castPose(v, 0.95), 1, gid);
+    assert.ok(castPose(v, HIT) >= 0.5 - 1e-9, `${gid}: his blow is not out when it lands`);
+    for (let i = 0; i < 92; i++) {
+      const p = castPose(v, i / 100);
+      assert.ok(p >= 0 && p < 1, `${gid}: ${p} at ${i}%`);
+      const near = [1, 2, 3, 4].map((j) => castPose(v, i / 100 + j * 0.03));   // (he may come back to the same pose: a rearing horse does)
+      if (i < 85) assert.ok(Math.max(p, ...near) - Math.min(p, ...near) > 0.02, `${gid}: he stands still from ${i}%`);
+    }
+  }
+  // Guan Yu: his horse rears and settles while the dragon wheels; he has not cut before it stoops
+  const guan = (k) => castPose(VFX.guanyu, k);
+  assert.ok(guan(0.23) > guan(0.15) && guan(0.31) < guan(0.23) && guan(0.5) < 0.5 && guan(0.55) >= 0.5);
 });
 
 test("every general's effect draws from start to end, both ways round, with and without art", () => {
