@@ -33,21 +33,22 @@ const RELEASE = { arrows: 0.36, beast: 0.42, fire: 0.1, dark: 0.1, wheels: 0.12,
 export const HIND = 24;
 // A general's pose through his effect, where it is more than wind-up, blow, follow-through: rows of
 // [k, how far through his skill animation, lean (radians his horse rears back), step (px toward the enemy)].
-// Guan Yu's 11 frames (assets/generals/guanyu, drawn for this): 0-1 the blade low in front, 2 lifted, 3-7 whirled
-// back over his head, straight up and back again, 8 the chop, 9-10 its follow-through. So: he lifts it as the
-// dragon comes out, whirls it there and back and there again while the dragon wheels (about the pace the
-// frames were drawn for), his horse half rearing; he chops as it stoops, lunging, and holds the chop while it
-// runs them through.
+// Guan Yu's attack is six frames of his blade's flourish (assets/generals/guanyu; the art server drew them as a
+// walk, and they loop): 0 the blade back and up, 1 straight up, 2 back, 3 swept forward, 4 up again, 5 chopped
+// down in front. So: while the dragon wheels he goes round 0..4 three times (about the pace the frames were
+// drawn for), his horse half rearing; he chops (5) as it stoops, lunging; lifts the blade (4) and chops again
+// as it reaches them, holds that while it runs them through, and lifts the blade once more as he draws back.
+// (A row at the same k as the one before it is a cut: he is suddenly somewhere else in his frames.)
 const POSES = { dragon: [
-  [0, 0, 0, 0], [DRAGON.RISE, 0.2, 0.12, 0], [0.225, 0.7, 0.16, 0], [0.38, 0.2, 0.12, 0], [DRAGON.DIVE - 0.03, 0.7, 0.2, -8],
-  [DRAGON.DIVE, 0.76, 0, 30], [DRAGON.DIVE + 0.06, 0.8, 0, 36], [DRAGON.EXIT, 0.86, 0, 30], [0.92, 1, 0, 0]] };
+  [0, 0, 0, 0], [DRAGON.RISE, 0.08, 0.12, 0], [0.225, 0.83, 0.16, 0], [0.225, 0, 0.16, 0], [0.38, 0.83, 0.12, 0], [0.38, 0, 0.12, 0], [DRAGON.DIVE - 0.02, 0.83, 0.2, -8],
+  [DRAGON.DIVE, 0.9, 0, 30], [0.6, 0.92, 0, 34], [0.6, 0.68, 0, 34], [0.66, 0.84, 0, 38], [DRAGON.EXIT, 0.94, 0, 32], [DRAGON.EXIT + 0.03, 0.7, 0, 22], [0.92, 0.7, 0, 0], [0.92, 1, 0, 0]] };
 /** The general's pose at k of his effect: { at: how far through his skill animation (0 its first frame .. 1 its
  *  end), lean, step }. The effect leads him: he winds up, lets go when it does, and is still following through
  *  as it fades, so he never stands idle under his own tactic. At 1 he is done and may stand again. */
 export function castPose(cfg, k) {
   const keys = POSES[cfg.fx] ?? [[0, 0], [RELEASE[cfg.fx] ?? HIT, BLOW], [0.92, 1]];
   let i = 1; while (i < keys.length - 1 && k >= keys[i][0]) i++;
-  const from = keys[i - 1], to = keys[i], m = span(k, from[0], to[0]), mix = (j) => lerp(from[j] ?? 0, to[j] ?? 0, m);
+  const from = keys[i - 1], to = keys[i], m = to[0] > from[0] ? span(k, from[0], to[0]) : 1, mix = (j) => lerp(from[j] ?? 0, to[j] ?? 0, m);
   return { at: mix(1), lean: mix(2), step: mix(3) };
 }
 

@@ -91,18 +91,21 @@ test("a general acts all through his tactic: he winds up, lets go by the time th
     assert.equal(castPose(v, 0).at, 0, gid); assert.deepEqual(castPose(v, 0.95), { at: 1, lean: 0, step: 0 }, gid);
     assert.ok(castPose(v, HIT).at >= 0.5 - 1e-9, `${gid}: his blow is not out when it lands`);
     for (let i = 0; i < 92; i++) {
-      const p = castPose(v, i / 100), near = [0, 1, 2, 3, 4].map((j) => castPose(v, i / 100 + j * 0.03).at);   // (he may come back to the same pose: a rearing horse does)
+      const p = castPose(v, i / 100), near = [0, 1, 2, 3, 4].map((j) => castPose(v, i / 100 + j * 0.03)), wide = (list) => Math.max(...list) - Math.min(...list);
       assert.ok(p.at >= 0 && p.at < 1, `${gid}: ${p.at} at ${i}%`);
-      if (i < 85) assert.ok(Math.max(...near) - Math.min(...near) > 0.02, `${gid}: he stands still from ${i}%`);
+      // he is never still for long: his frames move on, or he is stepping (he may come back to a pose he was in)
+      if (i < 85) assert.ok(wide(near.map((q) => q.at)) > 0.02 || wide(near.map((q) => q.step)) > 4, `${gid}: he stands still from ${i}%`);
       if (v.fx !== "dragon") assert.deepEqual([p.lean, p.step], [0, 0], gid);
     }
   }
-  // Guan Yu: while the dragon wheels he whirls his blade (frames 2..7, there and back) on a half-rearing horse and
-  // has not chopped (frame 8, from 8/11 of the way) before it stoops; then he has, and has lunged at them
-  const guan = (k) => castPose(VFX.guanyu, k), frame = (k) => Math.floor(guan(k).at * 11);
-  for (const k of [0.08, 0.2, 0.3, 0.4, 0.5]) assert.ok(guan(k).lean > 0.1 && frame(k) >= 2 && frame(k) <= 7, `whirling at ${k}: frame ${frame(k)}`);
-  assert.ok(frame(0.225) > frame(0.1) && frame(0.38) < frame(0.225) && frame(0.5) > frame(0.38), "there, back, and there again");
-  assert.ok(guan(0.56).lean === 0 && guan(0.56).step > 20 && frame(0.56) === 8);
+  // Guan Yu: while the dragon wheels he goes round his blade's flourish (frames 0..4 of 6, again and again) on a
+  // half-rearing horse, and has not chopped (frame 5) before it stoops; then he has, and has lunged at them
+  const guan = (k) => castPose(VFX.guanyu, k), frame = (k) => Math.floor(guan(k).at * 497 / 83);
+  for (let k = 0.08; k < 0.52; k += 0.01) assert.ok(guan(k).lean > 0.1 && frame(k) <= 4, `whirling at ${k.toFixed(2)}: frame ${frame(k)}`);
+  assert.deepEqual([0.075, 0.22, 0.23, 0.37, 0.39, 0.51].map(frame), [0, 4, 0, 4, 0, 4], "round, and round, and round again");
+  for (const k of [0.55, 0.59, 0.68, 0.75]) assert.ok(guan(k).lean === 0 && guan(k).step > 20 && frame(k) === 5, `the chop at ${k}`);
+  assert.equal(frame(0.62), 4, "between his two cuts the blade is up");
+  assert.ok(frame(0.85) === 4 && guan(0.85).step < 20, "he lifts the blade and draws back");
 });
 
 test("the wind of Guan Yu's blade goes right round over his head, turn for turn with the dragon", () => {
