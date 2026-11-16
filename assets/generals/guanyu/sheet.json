@@ -4,19 +4,19 @@
       "duration": 83,
       "filename": "attack/000.png",
       "frame": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -26,19 +26,19 @@
       "duration": 83,
       "filename": "attack/001.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 167,
+        "h": 319,
+        "w": 334,
+        "x": 334,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -48,19 +48,19 @@
       "duration": 83,
       "filename": "attack/002.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 334,
+        "h": 319,
+        "w": 334,
+        "x": 668,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -70,19 +70,19 @@
       "duration": 83,
       "filename": "attack/003.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 501,
+        "h": 319,
+        "w": 334,
+        "x": 1002,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -92,19 +92,19 @@
       "duration": 83,
       "filename": "attack/004.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 668,
+        "h": 319,
+        "w": 334,
+        "x": 1336,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -114,19 +114,19 @@
       "duration": 83,
       "filename": "attack/005.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 835,
+        "h": 319,
+        "w": 334,
+        "x": 1670,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -136,19 +136,19 @@
       "duration": 83,
       "filename": "attack/006.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 1002,
+        "h": 319,
+        "w": 334,
+        "x": 2004,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -158,19 +158,19 @@
       "duration": 83,
       "filename": "attack/007.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 1169,
+        "h": 319,
+        "w": 334,
+        "x": 2338,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -180,19 +180,19 @@
       "duration": 83,
       "filename": "attack/008.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 1336,
+        "h": 319,
+        "w": 334,
+        "x": 2672,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -202,19 +202,19 @@
       "duration": 83,
       "filename": "attack/009.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 1503,
+        "h": 319,
+        "w": 334,
+        "x": 3006,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -224,19 +224,19 @@
       "duration": 83,
       "filename": "attack/010.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 1670,
+        "h": 319,
+        "w": 334,
+        "x": 3340,
         "y": 0
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -246,19 +246,19 @@
       "duration": 83,
       "filename": "die/000.png",
       "frame": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
-        "y": 123
+        "y": 319
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -268,19 +268,19 @@
       "duration": 83,
       "filename": "die/001.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 167,
-        "y": 123
+        "h": 319,
+        "w": 334,
+        "x": 334,
+        "y": 319
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -290,19 +290,19 @@
       "duration": 83,
       "filename": "die/002.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 334,
-        "y": 123
+        "h": 319,
+        "w": 334,
+        "x": 668,
+        "y": 319
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -312,19 +312,19 @@
       "duration": 83,
       "filename": "die/003.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 501,
-        "y": 123
+        "h": 319,
+        "w": 334,
+        "x": 1002,
+        "y": 319
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -334,19 +334,19 @@
       "duration": 83,
       "filename": "idle/000.png",
       "frame": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
-        "y": 246
+        "y": 638
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -356,19 +356,19 @@
       "duration": 83,
       "filename": "idle/001.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 167,
-        "y": 246
+        "h": 319,
+        "w": 334,
+        "x": 334,
+        "y": 638
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -378,19 +378,19 @@
       "duration": 83,
       "filename": "idle/002.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 334,
-        "y": 246
+        "h": 319,
+        "w": 334,
+        "x": 668,
+        "y": 638
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -400,19 +400,19 @@
       "duration": 83,
       "filename": "idle/003.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 501,
-        "y": 246
+        "h": 319,
+        "w": 334,
+        "x": 1002,
+        "y": 638
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -422,19 +422,19 @@
       "duration": 83,
       "filename": "walk/000.png",
       "frame": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
-        "y": 369
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -444,19 +444,19 @@
       "duration": 83,
       "filename": "walk/001.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 167,
-        "y": 369
+        "h": 319,
+        "w": 334,
+        "x": 334,
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -466,19 +466,19 @@
       "duration": 83,
       "filename": "walk/002.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 334,
-        "y": 369
+        "h": 319,
+        "w": 334,
+        "x": 668,
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -488,19 +488,19 @@
       "duration": 83,
       "filename": "walk/003.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 501,
-        "y": 369
+        "h": 319,
+        "w": 334,
+        "x": 1002,
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -510,19 +510,19 @@
       "duration": 83,
       "filename": "walk/004.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 668,
-        "y": 369
+        "h": 319,
+        "w": 334,
+        "x": 1336,
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -532,19 +532,19 @@
       "duration": 83,
       "filename": "walk/005.png",
       "frame": {
-        "h": 123,
-        "w": 167,
-        "x": 835,
-        "y": 369
+        "h": 319,
+        "w": 334,
+        "x": 1670,
+        "y": 957
       },
       "rotated": false,
       "sourceSize": {
-        "h": 123,
-        "w": 167
+        "h": 319,
+        "w": 334
       },
       "spriteSourceSize": {
-        "h": 123,
-        "w": 167,
+        "h": 319,
+        "w": 334,
         "x": 0,
         "y": 0
       },
@@ -583,8 +583,8 @@
     "image": "sheet.png",
     "scale": "1",
     "size": {
-      "h": 492,
-      "w": 1837
+      "h": 1276,
+      "w": 3674
     },
     "version": "1"
   }

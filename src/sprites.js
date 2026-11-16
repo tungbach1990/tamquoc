@@ -38,8 +38,9 @@ export function sprite(id, kind = "generals") {
       const g = c.getContext("2d", { willReadFrequently: true });
       g.drawImage(img, 0, 0);
       Object.assign(s, analyze(g.getImageData(0, 0, c.width, c.height).data, c.width, json, { steady: kind === "generals" }), { img, ready: true });
-      const forced = (kind === "beasts" ? BEASTS : GENERALS)[id]?.facing;
-      if (forced) s.facing = forced;
+      const own = (kind === "beasts" ? BEASTS : GENERALS)[id];
+      if (own?.facing) s.facing = own.facing;
+      if (own?.body) s.h = own.body;
     } catch (e) { s.missing = true; console.warn(`sprite ${kind}/${id}:`, e.message) }
     return s;
   })();

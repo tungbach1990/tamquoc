@@ -2,13 +2,15 @@
 // type: B bộ (foot), K kỵ (cavalry), C cung (archer), M mưu (strategist).
 // wu võ, tri trí, thong thống. tactic: { name, shape: single|row|col|all|heal, fx?: stun|demoralize|heal }.
 // facing ("left"|"right") overrides the direction the sprite loader guesses from the art.
+// body: how tall the figure itself is in its sheet, in pixels, where the first idle frame would mislead (Guan Yu
+// stands with his blade held up over his head: he is sized by horse and rider, not by the blade).
 
 const g = (id, name, k, type, wu, tri, thong, tname, shape, fx) => ({ id, name, k, type, wu, tri, thong, tactic: { name: tname, shape, fx } });
 
 const LIST = [
   // ---- Thục ----
   g("liubei", "Lưu Bị", "thuc", "B", 75, 78, 88, "Nhân Đức", "heal"),
-  g("guanyu", "Quan Vũ", "thuc", "K", 97, 75, 90, "Thanh Long Yển Nguyệt", "col"),
+  { ...g("guanyu", "Quan Vũ", "thuc", "K", 97, 75, 90, "Thanh Long Yển Nguyệt", "col"), body: 236 },
   g("zhangfei", "Trương Phi", "thuc", "B", 98, 40, 75, "Tiếng Thét Trường Bản", "row", "stun"),
   g("zhaoyun", "Triệu Vân", "thuc", "K", 96, 76, 88, "Thất Tiến Thất Xuất", "single"),
   g("zhugeliang", "Gia Cát Lượng", "thuc", "M", 30, 100, 92, "Bát Trận Đồ", "all"),

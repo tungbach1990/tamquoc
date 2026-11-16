@@ -22,9 +22,9 @@ export const HIT = 0.62;
 export const effectMs = (cfg) => ({ beast: 1750, dragon: 3400, storm: 1850, grace: 1700, wheels: 1500 })[cfg.fx] ?? 1200;
 /** The beats of Guan Yu's dragon: it comes out of the blade, it stoops, it has run the column through. */
 const DRAGON = { RISE: 0.07, DIVE: 0.54, EXIT: 0.76 };
-// ponytail: where in a skill animation the arm is drawn back furthest and where the blow goes out, measured on
-// the riders' rig (frames 3 and 5 of 11) and taken for every rig; one that strikes elsewhere needs its own pair.
-const APEX = 0.3, BLOW = 0.5;
+// ponytail: where in a skill animation the blow goes out, measured on the riders' rig (frame 5 of 11) and taken
+// for every rig; one that strikes elsewhere needs its own.
+const BLOW = 0.5;
 // When in an effect (0..1) the general lets go: read by hand off each kind's own timings below (the arrows
 // leave the bow at 0.36, the beast springs at 0.42...), so a kind whose launch is moved must be moved here too.
 // A kind not listed strikes as the blow lands.
@@ -33,13 +33,14 @@ const RELEASE = { arrows: 0.36, beast: 0.42, fire: 0.1, dark: 0.1, wheels: 0.12,
 export const HIND = 24;
 // A general's pose through his effect, where it is more than wind-up, blow, follow-through: rows of
 // [k, how far through his skill animation, lean (radians his horse rears back), step (px toward the enemy)].
-// Guan Yu's sheet has him thrust a lance and nothing else, so his flourish is his whole figure's: the horse
-// rears as the dragon comes out and paws the air while he whirls the blade's spirit overhead (frames 0 and 1,
-// the lance at its highest); it gathers, comes down and lunges as he cuts, and he holds the cut while the
-// dragon runs them through.
+// Guan Yu's 11 frames (assets/generals/guanyu, drawn for this): 0-1 the blade low in front, 2 lifted, 3-7 whirled
+// back over his head, straight up and back again, 8 the chop, 9-10 its follow-through. So: he lifts it as the
+// dragon comes out, whirls it there and back and there again while the dragon wheels (about the pace the
+// frames were drawn for), his horse half rearing; he chops as it stoops, lunging, and holds the chop while it
+// runs them through.
 const POSES = { dragon: [
-  [0, 0, 0, 0], [DRAGON.RISE, 0.05, 0.3, 0], [0.15, 0.12, 0.2, 0], [0.23, 0.05, 0.3, 0], [0.31, 0.12, 0.2, 0], [0.39, 0.05, 0.3, 0], [0.46, 0.12, 0.22, 0],
-  [DRAGON.DIVE - 0.04, APEX, 0.36, -8], [DRAGON.DIVE, BLOW, 0, 30], [DRAGON.DIVE + 0.06, BLOW + 0.04, 0, 36], [DRAGON.EXIT, BLOW + 0.1, 0, 30], [0.92, 1, 0, 0]] };
+  [0, 0, 0, 0], [DRAGON.RISE, 0.2, 0.12, 0], [0.225, 0.7, 0.16, 0], [0.38, 0.2, 0.12, 0], [DRAGON.DIVE - 0.03, 0.7, 0.2, -8],
+  [DRAGON.DIVE, 0.76, 0, 30], [DRAGON.DIVE + 0.06, 0.8, 0, 36], [DRAGON.EXIT, 0.86, 0, 30], [0.92, 1, 0, 0]] };
 /** The general's pose at k of his effect: { at: how far through his skill animation (0 its first frame .. 1 its
  *  end), lean, step }. The effect leads him: he winds up, lets go when it does, and is still following through
  *  as it fades, so he never stands idle under his own tactic. At 1 he is done and may stand again. */
@@ -174,22 +175,6 @@ function shape(ctx, pts, fill, edge) {
   ctx.beginPath(); pts.forEach(([x, y], i) => ctx[i ? "lineTo" : "moveTo"](x, y)); ctx.closePath();
   ctx.fillStyle = fill; ctx.fill();
   if (edge) { ctx.lineWidth = 1.4; ctx.lineJoin = "round"; ctx.strokeStyle = edge; ctx.stroke() }
-}
-/** The Crescent Blade's spirit: a shaft from its butt (bx, by), a bellied blade drawn out to its point (px, py). */
-function glaive(ctx, bx, by, px, py, size, c, c2, a) {
-  if (a <= 0) return;
-  const dx = px - bx, dy = py - by, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, nx = lerp(bx, px, 0.66), ny = lerp(by, py, 0.66);
-  const hx = lerp(nx, px, 0.3) + uy * 5 * size, hy = lerp(ny, py, 0.3) - ux * 5 * size;
-  ctx.save(); ctx.globalAlpha *= a; ctx.lineCap = "round";
-  ctx.shadowColor = c; ctx.shadowBlur = 16;
-  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(nx, ny);
-  ctx.lineWidth = 5 * size; ctx.strokeStyle = tone(c, 0.45); ctx.stroke(); ctx.lineWidth = 2 * size; ctx.strokeStyle = c2; ctx.stroke();
-  lock(ctx, nx, ny, px, py, 8 * size, 9 * size, rgba(c2, 0.92));                      // the blade, bellied like a crescent moon
-  lock(ctx, hx, hy, hx + (uy * 12 + ux * 7) * size, hy + (-ux * 12 + uy * 7) * size, 3 * size, 0, rgba(c2, 0.92));   // the hook on its back
-  ctx.shadowBlur = 0;
-  lock(ctx, nx, ny, px, py, 3 * size, 6 * size, "#ffffff");                           // its edge
-  dot(ctx, nx, ny, 4 * size, "#ffe9a0"); dot(ctx, bx, by, 3 * size, "#ffe9a0");       // the collar under the blade, the cap on the butt
-  ctx.restore();
 }
 /** The Azure Dragon as a spirit: one long body laid along `sp`, lit from within and a little see-through.
  *  sp: its spine, head first; each point has x, y, r (its half-width there), s (its size there: 1 is full) and
@@ -443,11 +428,11 @@ const KINDS = {
     impacts(ctx, k, env, 1.3);
   },
 
-  /** Guan Yu's horse rears, the spirit of his blade rises over him and the Azure Dragon pours out of its point.
-   *  He whirls the blade round overhead and the dragon wheels round the sky after it, turn for turn; it roars,
-   *  and when he brings the blade over and down it stoops on the enemy's column and runs it through from end to
-   *  end, its whole length following. The blade (glaive) and the dragon (spiritDragon) are drawn here; Guan
-   *  Yu's own figure keeps time (POSES), and the blade rides with it. */
+  /** Guan Yu lifts his blade and the Azure Dragon pours out over him. He whirls the blade overhead (his own
+   *  figure does: POSES) and the wind of it goes round above him in a wheel of light, the dragon wheeling round
+   *  the sky after that light turn for turn; it roars, and when he chops it stoops on the enemy's column and
+   *  runs it through from end to end, its whole length following. The wind and the dragon (spiritDragon) are
+   *  drawn here, and ride with his figure as it rears and lunges. */
   dragon(ctx, layer, k, env) {
     const { cfg, dir, caster, W, H } = env, { RISE, DIVE, EXIT } = DRAGON, TURNS = 2, LEAD = 0.02, REACH = 100, FLAT = 0.36, time = k * effectMs(cfg) / 1000;
     // a point of his figure as it stands, carried with him as his horse rears (lean) and lunges (step)
@@ -500,15 +485,15 @@ const KINDS = {
     };
     const dragonAt = (kk, alpha) => spiritDragon(ctx, spine(kk), { t: time, c: cfg.c, c2: cfg.c2, a: alpha * 0.92, reach: span(kk, DIVE, HIT), roar: span(kk, DIVE - 0.07, DIVE - 0.01) * (1 - span(kk, EXIT + 0.04, EXIT + 0.12)) });
     const call = span(k, 0, 0.08) * (1 - span(k, DIVE + 0.02, DIVE + 0.12));       // while the blade is up, and through its fall
-    // The blade's spirit. It is raised straight up, then whirled flat over his head like a wheel: its point goes
-    // round the dragon's own ring made small, a little ahead of the dragon (LEAD), so where the blade points the
+    // The wind of his blade: a point of light that rises straight up, then goes round flat over his head like a
+    // wheel, on the dragon's own ring made small and a little ahead of the dragon (LEAD), so where it leads the
     // dragon comes. Then it is brought over and down on the enemy, from his hand.
     const swing = easeOut(span(k, RISE, RISE + 0.06)), fall = easeIn(span(k, DIVE - 0.04, DIVE + 0.03)), grown = easeOut(span(k, 0, 0.07));
     const bladeAt = (kk) => {                                                      // where it was at kk, he being where he is now
       const th = around(Math.min(kk, DIVE - 0.02) + LEAD), near = (Math.sin(th) + 1) / 2, vx = REACH * Math.cos(th) * swing, vy = lerp(-REACH * 0.9, REACH * FLAT * Math.sin(th), swing);
       const ang = lerp(Math.atan2(vy, vx), 0.55, fall), len = lerp(Math.hypot(vx, vy), REACH * 1.1, fall) * grown, ox = lerp(hub.x, hand.x, fall), oy = lerp(hub.y, hand.y, fall);
       const ux = dir * Math.cos(ang) * len, uy = Math.sin(ang) * len;
-      return { x: ox + ux, y: oy + uy, bx: ox - ux * 0.38, by: oy - uy * 0.38, size: lerp(0.85 + 0.3 * near * swing, 1.25, fall) };   // bigger on the near side of its wheel
+      return { x: ox + ux, y: oy + uy, size: lerp(0.85 + 0.3 * near * swing, 1.25, fall) };   // bigger on the near side of its wheel
     };
     const blade = bladeAt(k), bx = blade.x, by = blade.y;
     if (layer === "back") {
@@ -543,7 +528,7 @@ const KINDS = {
     lit(ctx, () => {
       if (call > 0) {
         if (shown > 0 && k < DIVE) { const p = at(k); streak(ctx, p.x, p.y, bx, by, 2, cfg.c2, 0.6 * call * shown) }   // the thread from its point that the dragon is led by
-        // the light the whirling blade leaves behind its point
+        // the light it leaves behind it
         ctx.lineCap = "round";
         if (swing > 0) for (let j = 9; j >= 1; j--) { const p = bladeAt(k - (j - 1) * 0.006), q = bladeAt(k - j * 0.006); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.lineWidth = (13 - j) * blade.size; ctx.strokeStyle = rgba(j < 4 ? cfg.c2 : cfg.c, 0.55 * call * (1 - j / 10)); ctx.stroke() }
         glow(ctx, bx, by, (26 + 8 * Math.sin(env.now / 70)) * blade.size, cfg.c2, 0.8 * call); glow(ctx, bx, by, 9 * blade.size, "#ffffff", call);
@@ -555,7 +540,6 @@ const KINDS = {
         crescent(ctx, hand.x, hand.y, 92, rot, open, 30, cfg.c, cfg.c2, 1 - cut); crescent(ctx, hand.x, hand.y, 70, rot, open * 0.85, 14, cfg.c2, "#ffffff", (1 - cut) * 0.85);
       }
     });
-    glaive(ctx, blade.bx, blade.by, bx, by, blade.size, cfg.c, cfg.c2, call * 0.9);
     // the lance of light it draws down the column: under the dragon, so it burns through its body
     const lance = span(k, DIVE, DIVE + 0.03) * (1 - span(k, EXIT - 0.02, EXIT + 0.14));
     if (lance > 0) lit(ctx, () => {

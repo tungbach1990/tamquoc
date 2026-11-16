@@ -5,8 +5,9 @@
 // of them by tools/spritecheck.mjs: the hair sits to the right of the face); the game mirrors a figure when it
 // has to look right. A sheet that turns out otherwise gets `facing: "right"` in its data entry.
 
-/** Rigs that carry a rider and a mount: drawn taller than a general on foot. */
-export const MOUNTED = new Set(["167x123"]);
+/** Rigs that carry a rider and a mount: drawn taller than a general on foot. (334x319: Guan Yu's, a variant the
+ *  art server made of the riders' rig at twice its size, to give him his blade and its flourish.) */
+export const MOUNTED = new Set(["167x123", "334x319"]);
 
 /** The box of opaque pixels in one frame of the sheet (rgba: 4 bytes a pixel, sw: sheet width), or null. */
 export function bbox(rgba, sw, f) {

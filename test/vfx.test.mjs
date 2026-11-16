@@ -97,15 +97,16 @@ test("a general acts all through his tactic: he winds up, lets go by the time th
       if (v.fx !== "dragon") assert.deepEqual([p.lean, p.step], [0, 0], gid);
     }
   }
-  // Guan Yu: his horse is up on its hind legs all the while the dragon wheels, and has not come down before it
-  // stoops; then it is down and he has lunged at them
-  const guan = (k) => castPose(VFX.guanyu, k);
-  for (const k of [0.08, 0.2, 0.3, 0.4, 0.5]) assert.ok(guan(k).lean > 0.15 && guan(k).at < 0.5, `rearing at ${k}`);
-  assert.ok(guan(0.56).lean === 0 && guan(0.56).step > 20 && guan(0.56).at >= 0.5);
+  // Guan Yu: while the dragon wheels he whirls his blade (frames 2..7, there and back) on a half-rearing horse and
+  // has not chopped (frame 8, from 8/11 of the way) before it stoops; then he has, and has lunged at them
+  const guan = (k) => castPose(VFX.guanyu, k), frame = (k) => Math.floor(guan(k).at * 11);
+  for (const k of [0.08, 0.2, 0.3, 0.4, 0.5]) assert.ok(guan(k).lean > 0.1 && frame(k) >= 2 && frame(k) <= 7, `whirling at ${k}: frame ${frame(k)}`);
+  assert.ok(frame(0.225) > frame(0.1) && frame(0.38) < frame(0.225) && frame(0.5) > frame(0.38), "there, back, and there again");
+  assert.ok(guan(0.56).lean === 0 && guan(0.56).step > 20 && frame(0.56) === 8);
 });
 
-test("Guan Yu whirls his blade right round over his head, turn for turn with the dragon, then brings it down in front", () => {
-  // the blade's point is where its trail starts: the first stroke of its widest width
+test("the wind of Guan Yu's blade goes right round over his head, turn for turn with the dragon", () => {
+  // where it is: where its trail starts, the first stroke of its widest width
   const env = { W: 540, H: 600, dir: 1, now: 0, cfg: VFX.guanyu, caster: { x: 226, y: 392, tall: 125 }, targets: [262, 392, 522].map((y) => ({ x: 390, y, tall: 100 })), beast: null };
   const point = (k) => {
     const ctx = fakeCtx(); let at = null, path = [];
@@ -114,7 +115,7 @@ test("Guan Yu whirls his blade right round over his head, turn for turn with the
     return at;
   };
   const xs = [], ys = [];
-  for (let k = 0.14; k < 0.5; k += 0.005) { const p = point(k); assert.ok(p, `no blade at ${k}`); xs.push(p[0]); ys.push(p[1]) }
+  for (let k = 0.14; k < 0.5; k += 0.005) { const p = point(k); assert.ok(p, `no wind at ${k}`); xs.push(p[0]); ys.push(p[1]) }
   const mid = (Math.max(...xs) + Math.min(...xs)) / 2, passes = xs.filter((x, i) => i && (xs[i - 1] < mid) !== (x < mid)).length;   // times it passes over him: twice a turn
   assert.ok(Math.max(...xs) - Math.min(...xs) > 170 && Math.max(...ys) - Math.min(...ys) > 50, "a wide wheel, seen from the side");
   assert.ok(passes >= 3, `it passes over him ${passes} time(s)`);
