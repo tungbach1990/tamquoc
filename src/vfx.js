@@ -14,7 +14,6 @@
 //   now             a running clock in ms, for sprite animation and flicker
 
 import { drawSprite, animOf } from "./sprites.js";
-import { mustFlip } from "./spritemeta.js";
 import { BEASTS } from "./data/vfx.js";
 
 /** Where in the effect (0..1) the blow lands: the view applies the damage then. */
@@ -138,15 +137,132 @@ function giant(ctx, env, a, anim = "skill01") {
   const shake = Math.sin(env.now / 18) * 5 * a, grow = 1 + 0.08 * Math.sin(env.now / 60);
   drawSprite(ctx, caster.s, animOf(caster.s, anim), env.now, caster.x - dir * 34 + shake, caster.y + 190, { scale: 430 / caster.s.h * grow, faceRight: dir > 0, alpha: 0.62 * a, loop: true });
 }
-/** A side-on figure in flight, its middle at (x, y), heading along (vx, vy). It leans into its path (lean: how
- *  much, 0..1). face: +1 or -1 keeps it looking that way; without it the figure turns with its heading,
- *  squeezing flat as it comes about, the way a ribbon turns over. */
-function fly(ctx, s, anim, ms, x, y, vx, vy, size, alpha, { lean = 1, face = 0 } = {}) {
-  const speed = Math.hypot(vx, vy) || 1, turn = Math.max(-1, Math.min(1, vx / speed * 2.5));
-  const sx = face || (Math.abs(turn) < 0.2 ? (turn < 0 ? -0.2 : 0.2) : turn);
-  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(vy, Math.abs(vx)) * lean * Math.sign(sx)); ctx.scale(sx, 1);
-  // drawSprite puts the feet where it is told: tell it where they fall when the figure's middle is at the origin
-  drawSprite(ctx, s, anim, ms, (s.cx - s.ax) * size * (mustFlip(s.facing, true) ? 1 : -1), (s.ay - s.cy) * size, { scale: size, faceRight: true, alpha });
+/** A lock of flame or hair, a horn, a fang: w wide at its root (x, y), drawn out to a point at (tx, ty) and
+ *  bowed sideways by `bow`. */
+function lock(ctx, x, y, tx, ty, w, bow, fill) {
+  const dx = tx - x, dy = ty - y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, mx = (x + tx) / 2 + nx * bow, my = (y + ty) / 2 + ny * bow;
+  ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(x + nx * w, y + ny * w);
+  ctx.quadraticCurveTo(mx + nx * w * 0.7, my + ny * w * 0.7, tx, ty); ctx.quadraticCurveTo(mx - nx * w * 0.7, my - ny * w * 0.7, x - nx * w, y - ny * w); ctx.fill();
+}
+function shape(ctx, pts, fill, edge) {
+  ctx.beginPath(); pts.forEach(([x, y], i) => ctx[i ? "lineTo" : "moveTo"](x, y)); ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  if (edge) { ctx.lineWidth = 1.4; ctx.lineJoin = "round"; ctx.strokeStyle = edge; ctx.stroke() }
+}
+/** The Azure Dragon as a spirit: one long body laid along `sp`, lit from within and a little see-through.
+ *  sp: its spine, head first; each point has x, y, r (its half-width there), s (its size there: 1 is full) and
+ *  f in -1..1 (how much of its flank is seen, and on which side its belly lies).
+ *  t: seconds, for all that flutters. roar: 0..1, its jaws open. reach: 0..1, its claws thrown forward. */
+function spiritDragon(ctx, sp, { t, roar, reach, c, c2, a }) {
+  const N = sp.length - 1, NECK = 3, IVORY = "#fff1c0", GOLD = "#f2e2a4", deep = tone(c, 0.24), dusk = tone(c, 0.6), bright = tone(c, 1.35), base = ctx.globalAlpha * a;
+  const ink = (v) => { ctx.globalAlpha = base * v };
+  const wave = (phase, speed = 8) => Math.sin(t * speed - phase);
+  let hx = 1, hy = 0;
+  for (let i = 0; i <= N; i++) {                                                   // which way each part of it is heading
+    const p = sp[i], q0 = sp[Math.max(0, i - 1)], q1 = sp[Math.min(N, i + 1)], dx = q0.x - q1.x, dy = q0.y - q1.y, l = Math.hypot(dx, dy);
+    if (l > 0.01) { hx = dx / l; hy = dy / l }                                     // (a part still inside the blade has no heading of its own)
+    p.hx = hx; p.hy = hy;
+  }
+  /** A point of part i, `lat` half-widths off the spine. */
+  const at = (i, lat) => { const p = sp[i]; return [p.x - p.hy * p.r * lat, p.y + p.hx * p.r * lat] };
+  const band = (l0, l1, fill) => {
+    ctx.beginPath();
+    for (let i = NECK; i <= N; i++) ctx.lineTo(...at(i, l0(sp[i])));
+    for (let i = N; i >= NECK; i--) ctx.lineTo(...at(i, l1(sp[i])));
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  };
+  const turned = (p) => (p.f < 0 ? -1 : 1) * Math.max(0.35, Math.abs(p.f));      // seen end-on it flattens, and never to nothing
+  const leg = (i, near, w) => {                                                    // w: -1 trailing behind .. 1 thrown forward
+    const p = sp[i]; if (p.r < 3) return;
+    const hip = [near ? 0 : 6, 8], knee = [-12 + 8 * w, 25 - 2 * Math.abs(w)], foot = [2 + 22 * w, 37 - 5 * w];
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.hy, p.hx)); ctx.scale(p.s, p.s * turned(p));
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const [width, colour] of [[10, deep], [6, near ? c : dusk]]) { ctx.beginPath(); ctx.moveTo(...hip); ctx.lineTo(...knee); ctx.lineTo(...foot); ctx.lineWidth = width; ctx.strokeStyle = colour; ctx.stroke() }
+    lock(ctx, knee[0], knee[1], knee[0] - 17, knee[1] - 3 + wave(i, 9) * 3, 3, 2, rgba(c2, 0.8));          // a tuft of flame at the elbow
+    const aim = Math.atan2(foot[1] - knee[1], foot[0] - knee[0]);
+    for (let j = 0; j < 4; j++) { const ang = aim + (j - 1.5) * 0.42 - 0.25; lock(ctx, foot[0], foot[1], foot[0] + Math.cos(ang) * 13, foot[1] + Math.sin(ang) * 13, 2, (j - 1.5) * 1.5, near ? IVORY : "#b9a970") }
+    ctx.restore();
+  };
+  const paddle = (phase, to) => lerp(0.45 * wave(phase, 5), to, reach);
+
+  ctx.save();
+  ink(1); lit(ctx, () => { for (let i = NECK; i <= N; i += 8) glow(ctx, sp[i].x, sp[i].y, sp[i].r * 3.6, c, 0.2) });   // the light it carries
+  ink(0.5); leg(15, false, paddle(1, 1)); leg(43, false, paddle(3, -1));          // the legs on its far side
+  // the fins down its back: flames swept toward the tail, tallest at the neck
+  ink(0.75); ctx.beginPath();
+  for (let i = NECK; i < N - 1; i += 2) {
+    const p = sp[i], back = p.f < 0 ? 1 : -1, tall = (0.9 + 0.35 * wave(i * 0.8, 9)) * Math.abs(p.f) * (1 + 0.3 * Math.max(0, 1 - i / 16));
+    ctx.moveTo(...at(i, back * 0.8)); ctx.lineTo(...at(Math.min(N, i + 3), back * (1 + tall))); ctx.lineTo(...at(Math.min(N, i + 2), back * 0.8));
+  }
+  ctx.fillStyle = rgba(c2, 0.9); ctx.fill();
+  // the body: a dark edge with light round it, the flank, the pale plated belly
+  ink(0.5); ctx.shadowColor = c2; ctx.shadowBlur = 14; band(() => -1, () => 1, deep); ctx.shadowBlur = 0;
+  ink(0.46); band(() => -0.78, () => 0.8, c);
+  const belly = (p) => 0.72 * p.f;
+  ink(0.5); band((p) => Math.max(-0.92, belly(p) - 0.3), (p) => Math.min(0.92, belly(p) + 0.3), GOLD);
+  ink(0.3); ctx.beginPath();
+  for (let i = NECK + 1; i < N; i++) { const p = sp[i]; ctx.moveTo(...at(i, Math.max(-0.92, belly(p) - 0.3))); ctx.lineTo(...at(i, Math.min(0.92, belly(p) + 0.3))) }
+  ctx.lineWidth = 1; ctx.strokeStyle = deep; ctx.stroke();
+  // scales: three rows of small arcs, open toward the head
+  ink(0.42); ctx.beginPath();
+  for (let i = NECK + 1; i < N - 5; i++) for (let j = 0; j < 3; j++) {
+    if ((i + j) % 2) continue;
+    const p = sp[i], [x, y] = at(i, (-0.52 + j * 0.34) * p.f), rr = p.r * 0.3, ang = Math.atan2(-p.hy, -p.hx);
+    ctx.moveTo(x + Math.cos(ang - 1.2) * rr, y + Math.sin(ang - 1.2) * rr); ctx.arc(x, y, rr, ang - 1.2, ang + 1.2);
+  }
+  ctx.lineWidth = 1.1; ctx.strokeStyle = c2; ctx.stroke();
+  ink(1); lit(ctx, () => {
+    band((p) => -0.66 * p.f - 0.09, (p) => -0.66 * p.f + 0.09, rgba(c2, 0.3));     // the sheen along its back
+    for (let j = 0; j < 4; j++) { const p = sp[NECK + Math.floor((t * 34 + j * (N - NECK) / 4) % (N - NECK))]; glow(ctx, p.x, p.y, p.r * 1.7, c2, 0.45) }   // its breath running down it, head to tail
+  });
+  ink(0.85); leg(12, true, paddle(0, 1)); leg(40, true, paddle(2, -1));
+  // the tail ends in a brush of flame
+  const tail = sp[N];
+  if (tail.r > 0.2) for (let j = 0; j < 5; j++) {
+    const ang = Math.atan2(-tail.hy, -tail.hx) + (j - 2) * 0.3 + wave(j, 7) * 0.22, L = (26 + 12 * (2 - Math.abs(j - 2))) * tail.s;
+    lock(ctx, tail.x, tail.y, tail.x + Math.cos(ang) * L, tail.y + Math.sin(ang) * L, 3.5 * tail.s, wave(-j, 9) * 4 * tail.s, j % 2 ? bright : rgba(c2, 0.9));
+  }
+  // lightning crawls over it
+  ink(1); lit(ctx, () => {
+    const beat = Math.floor(t * 12);
+    for (let j = 0; j < 2; j++) {
+      const i = NECK + Math.floor(rnd(beat, j + 3) * (N - 14));
+      if (rnd(beat, j) < 0.45 || sp[i + 9].r < 3) continue;
+      const [x0, y0] = at(i, -1.7), [x1, y1] = at(i + 9, 1.7);
+      bolt(ctx, x0, y0, x1, y1, beat + j, c2, "#ffffff", 1.4, 0.8);
+    }
+  });
+
+  // the head: x runs out along the snout, y down toward the jaw
+  const h = sp[0], open = 0.1 + 0.55 * roar + 0.03 * wave(0, 6);
+  ctx.translate(h.x, h.y); ctx.rotate(Math.atan2(h.y - sp[NECK].y, h.x - sp[NECK].x)); ctx.scale(h.s * 1.5, h.s * 1.5 * turned(h));
+  ink(0.88);
+  lock(ctx, -9, -15, -42, -40, 2.4, 5, "#b9a15e"); lock(ctx, -24, -29, -27, -46, 1.7, 1, "#b9a15e");                 // the far antler
+  lock(ctx, 33, -4, -28, -40 + wave(1) * 8, 1.6, 13 + wave(2) * 4, rgba(c2, 0.7));                                // the far whisker, flung up over its head
+  for (let j = 0; j < 7; j++) {                                                    // the mane: flames flaring back from the crown and from the cheek, the neck bare between
+    const up = j < 4, v = up ? j / 3 : (j - 4) / 2, ax = -20 + (up ? 4 : 6) * v, ay = up ? lerp(-14, -4, v) : lerp(6, 12, v), w = wave(j * 0.9) * 5;
+    lock(ctx, ax, ay, ax - (up ? 46 - 8 * v : 30 + 8 * v) - 6 * rnd(j, 5), ay + (up ? lerp(-20, -4, v) : lerp(8, 20, v)) + w, 3.4, w * 0.5 + (up ? 4 : -4), j % 3 === 1 ? rgba(c2, 0.9) : bright);
+  }
+  shape(ctx, [[-6, 4], [33, 2], [-4 + 32 * Math.cos(open), 6 + 32 * Math.sin(open)]], "#4a0f16");                // the maw
+  ctx.save(); ctx.translate(-4, 6); ctx.rotate(open);                              // the lower jaw swings on its hinge
+  for (let j = 0; j < 3; j++) lock(ctx, 16 - j * 6, 8, -2 - j * 7, 20 + j * 3 + wave(j) * 4, 2.6, wave(j + 1) * 2, j % 2 ? rgba(c2, 0.9) : bright);   // beard
+  shape(ctx, [[0, 0], [10, 1], [22, 0], [34, -3], [37, 1], [30, 6], [16, 9], [2, 9], [-10, 6]], dusk, deep);
+  lock(ctx, 29, -1, 30, -9, 1.7, 0, IVORY); lock(ctx, 20, 0.5, 20, -4.5, 1.3, 0, IVORY); lock(ctx, 12, 1, 12, -3, 1.2, 0, IVORY);
+  ctx.restore();
+  shape(ctx, [[-26, -6], [-20, -15], [-8, -18], [2, -13], [14, -11], [26, -13], [34, -10], [37, -4], [35, 1], [28, 2], [16, 3], [4, 5], [-4, 6], [-14, 12], [-24, 8]], c, deep);   // skull and snout
+  shape(ctx, [[-24, 8], [-14, 12], [-4, 6], [-10, 0], [-22, -2]], dusk);          // the cheek, in shadow
+  lock(ctx, 32, 1, 31, 9.5, 1.9, 0, IVORY); lock(ctx, 24, 2, 23.5, 7, 1.4, 0, IVORY); lock(ctx, 16, 3, 15.5, 7, 1.3, 0, IVORY); lock(ctx, 9, 4, 8.6, 7.5, 1.2, 0, IVORY);   // fangs
+  dot(ctx, 33, -6.5, 1.5, deep);
+  ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-9, -16.5); ctx.lineTo(0, -13.5); ctx.lineTo(9, -9); ctx.lineWidth = 3.2; ctx.strokeStyle = deep; ctx.stroke();   // a brow drawn down in anger
+  ctx.save(); ctx.translate(1.5, -9); ctx.rotate(0.32); ctx.fillStyle = "#fff6c8"; ctx.beginPath(); ctx.ellipse(0, 0, 4.4, 2.3, 0, 0, TAU); ctx.fill(); ctx.fillStyle = "#1a0d06"; ctx.fillRect(-0.7, -2.3, 1.4, 4.6); ctx.restore();
+  lock(ctx, -15, -14, -54, -31, 2.8, 5, "#ffeeb0"); lock(ctx, -32, -24, -39, -43, 1.9, 1.5, "#ffeeb0");            // the near antler
+  lock(ctx, 31, 1, -38, 24 + wave(3) * 9, 1.8, -14 + wave(4) * 4, rgba(c2, 0.95));                                // the near whisker
+  ink(1); lit(ctx, () => {
+    ctx.beginPath(); ctx.moveTo(-20, -15); ctx.lineTo(-8, -18); ctx.lineTo(2, -13); ctx.lineTo(14, -11); ctx.lineTo(26, -13); ctx.lineTo(34, -10);
+    ctx.lineWidth = 1.6; ctx.strokeStyle = rgba(c2, 0.5); ctx.stroke();
+    glow(ctx, 1.5, -9, 7 + 3 * roar, "#ffe27a", 0.7);                             // the eye burns
+    glow(ctx, 14, 6 + 7 * roar, 9 + 9 * roar, c2, 0.25 + 0.4 * roar); glow(ctx, 12, 6 + 7 * roar, 3 + 4 * roar, "#ffffff", 0.8 * roar);   // and the fire in its throat
+  });
   ctx.restore();
 }
 /** A smooth curve through the points (Catmull-Rom): u = 0 is the first point, u = 1 the second, and so on. */
@@ -285,11 +401,13 @@ const KINDS = {
     impacts(ctx, k, env, 1.3);
   },
 
-  /** The head leads; the articulated body follows its flight, rather than rotating a rigid sprite. */
+  /** Guan Yu lifts his blade and the Azure Dragon pours out of its point to wheel round the sky; it roars, and
+   *  when the blade falls it stoops on the enemy's column and runs it through from end to end, its whole length
+   *  following. The dragon is drawn here (spiritDragon), laid back along the road its head has flown. */
   dragon(ctx, layer, k, env) {
-    const { cfg, dir, caster, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1;
+    const { cfg, dir, caster, W, H } = env, RISE = 0.07, DIVE = 0.54, EXIT = 0.76, TURNS = 1, time = k * effectMs(cfg) / 1000;
     const hand = { x: caster.x + dir * 8, y: caster.y - caster.tall * 0.62 }, tip = { x: hand.x, y: hand.y - 74 };   // the blade, held straight up
-    const C = { x: W / 2, y: 124 }, RX = 178, RY = 50;                              // the ring it flies in the sky
+    const C = { x: W / 2, y: 120 }, RX = 178, RY = 64;                              // the ring it flies in the sky
     // the enemy's column, in the order it will be run through
     const marks = [...env.targets].sort((a, b) => a.y - b.y || (a.x - b.x) * dir).map((t) => ({ x: t.x, y: t.y - t.tall * 0.5, t }));
     const n = marks.length, first = marks[0], last = marks[n - 1], passes = (i) => HIT + (EXIT - HIT) * i / n;
@@ -300,77 +418,36 @@ const KINDS = {
       return { x: lerp(tip.x, C.x, e) + dir * RX * e * Math.cos(ph), y: lerp(tip.y, C.y, e) + RY * e * Math.sin(ph), near: (Math.sin(ph) + 1) / 2, e };
     };
     const P0 = wheel(DIVE), lead = n > 1 ? { x: last.x - marks[n - 2].x, y: last.y - marks[n - 2].y } : { x: dir * 40, y: 280 }, ll = Math.hypot(lead.x, lead.y) || 1;
-    const road = [P0, ...marks, { x: last.x + lead.x / ll * 300, y: last.y + lead.y / ll * 300 }];             // down through each of them, and out the far end
-    const along = (kk) => { if (kk > HIT) return 1 + n * span(kk, HIT, EXIT); const s = span(kk, DIVE, HIT); return s * (0.4 + 0.6 * s) };
+    const out = (far) => ({ x: last.x + lead.x / ll * far, y: last.y + lead.y / ll * far });
+    // it leaves the ring the way it was flying and swoops round onto the column: the point before P0 is never reached, it only sets the heading there
+    const v = { x: -dir * RX * Math.sin(phiD), y: RY * Math.cos(phiD) }, swoop = 1.2 * Math.hypot(first.x - P0.x, first.y - P0.y) / Math.hypot(v.x, v.y);
+    const road = [{ x: first.x - v.x * swoop, y: first.y - v.y * swoop }, P0, ...marks, out(300), out(1000)];   // down through each of them, and out the far end, tail and all
+    const along = (kk) => { if (kk > HIT) return 2 + n * (kk - HIT) / (EXIT - HIT); const s = span(kk, DIVE, HIT); return 1 + s * (0.4 + 0.6 * s) };
     const at = (kk) => (kk < DIVE ? wheel(kk) : spline(road, along(kk)));
-    const full = 1;
-    const sizeAt = (kk) => { if (kk >= DIVE) return lerp(0.68 + 0.24 * P0.near, 1.12, easeIn(span(kk, DIVE, HIT))); const w = wheel(kk); return (0.68 + 0.24 * w.near) * (0.3 + 0.7 * w.e) };
-    const shown = span(k, RISE, RISE + 0.05) * (1 - span(k, EXIT + 0.01, EXIT + 0.12)), far = k < DIVE && wheel(k).near < 0.5;
-    const dragonAt = (kk, alpha) => {
-      const size = sizeAt(kk), time = kk * effectMs(cfg) / 1000, spine = [at(kk)];
-      // Fixed-length vertebrae follow delayed head positions; the travelling wave grows towards the tail.
-      // No frame history: seeking/replaying the tactic gives exactly the same pose.
-      for (let i = 1; i <= 44; i++) {
-        const t = kk - i * 0.0026, p = at(t), q = at(t + 0.001), l = Math.hypot(q.x - p.x, q.y - p.y) || 1;
-        const wave = Math.sin(time * 9 - i * 0.32) * (3 + i * 0.27) * size;
-        const x = p.x - (q.y - p.y) / l * wave, y = p.y + (q.x - p.x) / l * wave;
-        const prev = spine[i - 1], dx = x - prev.x, dy = y - prev.y, d = Math.hypot(dx, dy) || 1;
-        spine.push({ x: prev.x + dx / d * 5.2 * size, y: prev.y + dy / d * 5.2 * size });
+    // small on the far side of its ring and as it comes out of the blade; at its largest as it strikes
+    const sizeAt = (kk) => { if (kk >= DIVE) return lerp(0.78 + 0.3 * P0.near, 1.3, easeIn(span(kk, DIVE, HIT))); const w = wheel(kk); return (0.78 + 0.3 * w.near) * (0.3 + 0.7 * w.e) };
+    const shown = span(k, RISE, RISE + 0.05) * (1 - span(k, 0.9, 0.98)), far = k < DIVE && wheel(k).near < 0.5;
+    /** Its spine when its head is where it was at kk: 72 parts a fixed way apart along the road already flown
+     *  (so it bends where the head turned and never stretches), swaying more toward the tail. Nothing is
+     *  remembered between frames: the same kk gives the same pose. */
+    const spine = (kk) => {
+      const PARTS = 72, STEP = 0.0025, sway = 1 - 0.55 * span(kk, DIVE, HIT), gap = 8 * sizeAt(kk), sp = [];
+      let prev = at(kk), tp = kk, left = 0, hx = dir, hy = 0;
+      for (let t = kk - STEP; sp.length <= PARTS; t -= STEP) {
+        if (tp <= RISE) { sp.push({ x: prev.x, y: prev.y, r: 0, s: 0, f: dir }); continue }   // not yet out of the blade
+        const q = at(t); let d = Math.hypot(prev.x - q.x, prev.y - q.y), x = prev.x, y = prev.y, tt = tp;
+        if (d > 1e-6) { hx = (prev.x - q.x) / d; hy = (prev.y - q.y) / d }
+        while (d >= left && sp.length <= PARTS) {
+          const m = d > 0 ? left / d : 0; x = lerp(x, q.x, m); y = lerp(y, q.y, m); tt = lerp(tt, t, m); d -= left; left = gap;
+          const i = sp.length, u = i / PARTS, s = sizeAt(tt), off = Math.sin(time * 7 - i * 0.3) * 13 * Math.pow(u, 1.2) * sway * s;
+          // a neck, a deep chest, a long taper to the tail; in the ring its belly stays down, so it rolls over as it comes about
+          sp.push({ x: x - hy * off, y: y + hx * off, s, r: 17 * s * (u < 0.12 ? lerp(0.8, 1, u / 0.12) : 1 - 0.93 * Math.pow((u - 0.12) / 0.88, 1.6)), f: tt < DIVE ? Math.max(-1, Math.min(1, hx * 3)) : dir });
+        }
+        left -= d; prev = q; tp = t;
       }
-      ctx.save(); ctx.globalAlpha *= alpha; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      const stroke = (points, color, width) => { ctx.beginPath(); points.forEach((p, i) => ctx[i ? "lineTo" : "moveTo"](p[0], p[1])); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke() };
-      const local = (i, draw) => {
-        const p = spine[i], q = spine[Math.min(44, i + 1)];
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.y - q.y, p.x - q.x)); ctx.scale(size, size); draw(); ctx.restore();
-      };
-      // Four hooked legs paddle and fold back as the dragon dives.
-      for (const i of [9, 23]) for (const side of [-1, 1]) local(i, () => {
-        const kick = Math.sin(time * 7 - i * 0.22 + side) * 5, tuck = span(kk, DIVE, HIT) * 8;
-        const foot = [-13 - tuck + kick, side * (24 - tuck)];
-        const leg = [[0, side * 5], [-6 + kick, side * 17], foot];
-        stroke(leg, "#062e2c", 7); stroke(leg, "#41b888", 4);
-        for (let toe = -1; toe <= 1; toe++) stroke([foot, [foot[0] + 7 + toe * 3, foot[1] + side * (4 + toe * 3)]], "#f3dda0", 1.7);
-      });
-      for (let i = 43; i >= 0; i--) {
-        const p = spine[i], q = spine[i + 1], radius = (1.1 + 8 * Math.pow(1 - i / 44, 0.65)) * size;
-        stroke([[q.x, q.y], [p.x, p.y]], "#073d36", radius * 2 + 3 * size);
-        stroke([[q.x, q.y - radius * 0.15], [p.x, p.y - radius * 0.15]], cfg.c, radius * 2);
-        stroke([[q.x, q.y + radius * 0.42], [p.x, p.y + radius * 0.42]], "#b7cf86", radius * 0.65);
-        if (i % 2 === 0) local(i, () => {
-          const r = radius / size, flutter = Math.sin(time * 12 - i * 0.6) * 3;
-          ctx.fillStyle = "#73e3b2"; ctx.beginPath(); ctx.moveTo(2, -r * 0.7); ctx.lineTo(-6, -r - 6 + flutter); ctx.lineTo(-5, -r * 0.35); ctx.fill();
-          stroke([[0, -r * 0.4], [-2, 0], [0, r * 0.35]], "#0c765b", 1.2);
-          dot(ctx, 1, -r * 0.45, 1, "#c6f5bc");
-        });
-      }
-      local(0, () => {
-        const breath = Math.sin(time * 8), roar = span(kk, DIVE - 0.04, HIT) * (1 - span(kk, EXIT, EXIT + 0.06));
-        // Swept mane, forked antlers, brows and a lower jaw opening on the strike.
-        for (let j = 0; j < 7; j++) {
-          const y = -12 + j * 4, flutter = Math.sin(time * 11 - j * 0.8) * 4;
-          stroke([[-3, y], [-17, y * 1.4 + flutter], [-29 - j % 3 * 3, y * 1.5 + flutter * 1.5]], j % 2 ? "#d9edbb" : "#57ca9c", 3);
-        }
-        for (const side of [-1, 1]) {
-          stroke([[-2, side * 8], [-10, side * 23], [-22, side * 27]], "#f4dda2", 3);
-          stroke([[-10, side * 23], [-8, side * 30]], "#f4dda2", 2);
-        }
-        ctx.fillStyle = "#0a4e40"; ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = "#4ac795"; ctx.beginPath(); ctx.ellipse(3, -3, 14, 9, 0, 0, TAU); ctx.fill();
-        stroke([[6, 5], [22, 8 + roar * 6]], "#b7d493", 6);
-        stroke([[8, 1], [24, 2]], "#82dfac", 10);
-        stroke([[9, 5], [23, 5]], "#07342e", 2);
-        for (const x of [13, 20]) stroke([[x, 5], [x - 1, 8 + roar * 2]], "#fff0c0", 1.8);
-        stroke([[-1, -8], [10, -7]], "#eddb9c", 3);
-        dot(ctx, 7, -5, 2.8, "#ffdf72"); dot(ctx, 8, -5, 1.1, "#142b26"); dot(ctx, 9, -6, 0.8, "#ffffff");
-        dot(ctx, 24, 0, 1.8, "#07342e");
-        for (const side of [-1, 1]) {
-          ctx.beginPath(); ctx.moveTo(19, side * 4);
-          ctx.bezierCurveTo(28, side * 18, -17, side * 22 + breath * 5, -38, side * 13 + Math.sin(time * 9 - 1) * 7);
-          ctx.strokeStyle = "#e1f2c1"; ctx.lineWidth = 1.5; ctx.stroke();
-        }
-      });
-      ctx.restore();
+      return sp;
     };
+    const dragonAt = (kk, alpha) => spiritDragon(ctx, spine(kk), { t: time, c: cfg.c, c2: cfg.c2, a: alpha * 0.92, reach: span(kk, DIVE, HIT), roar: span(kk, DIVE - 0.07, DIVE - 0.01) * (1 - span(kk, EXIT + 0.04, EXIT + 0.12)) });
     const call = span(k, 0, 0.08) * (1 - span(k, DIVE + 0.02, DIVE + 0.12));       // while the blade is up, and through its fall
     if (layer === "back") {
       const a = span(k, 0, 0.1) * (1 - span(k, 0.9, 1));
@@ -381,9 +458,9 @@ const KINDS = {
         if (shaft > 0) { const g = ctx.createLinearGradient(0, tip.y, 0, 0), w = 8 + 22 * shaft + 4 * Math.sin(env.now / 90); g.addColorStop(0, rgba(cfg.c2, 0.75 * shaft)); g.addColorStop(1, rgba(cfg.c, 0)); ctx.fillStyle = g; ctx.fillRect(tip.x - w / 2, 0, w, tip.y) }
         ring(ctx, caster.x, caster.y, 26 + 70 * easeOut(span(k, 0, 0.14)), 4, cfg.c2, call * (1 - span(k, 0, 0.14)), 0.38);
         // the wake it leaves round the sky
-        if (k > RISE && k < EXIT) for (let j = 1; j <= 16; j++) { const kk = k - j * 0.007; if (kk < RISE) break; const p = at(kk); glow(ctx, p.x, p.y, sizeAt(kk) / full * (50 - j * 2.6), j % 3 ? cfg.c : cfg.c2, 0.32 * shown * (1 - j / 16)) }
+        if (k > RISE && k < EXIT) for (let j = 1; j <= 16; j++) { const kk = k - j * 0.007; if (kk < RISE) break; const p = at(kk); glow(ctx, p.x, p.y, sizeAt(kk) * (50 - j * 2.6), j % 3 ? cfg.c : cfg.c2, 0.32 * shown * (1 - j / 16)) }
       });
-      if (far && shown > 0) dragonAt(k, shown * 0.92);                             // on the far side of its ring: behind the clouds
+      if (far && shown > 0) dragonAt(k, shown * 0.8);                              // on the far side of its ring: behind the clouds
       for (let i = 0; i < 16; i++) {                                               // clouds, gathering as he calls
         const drift = (1 - easeOut(span(k, 0, 0.3))) * (i % 2 ? 180 : -180), x = (i + 0.5) * W / 16 + drift + Math.sin(env.now / 900 + i) * 12, y = 46 + rnd(i, 2) * 150;
         glow(ctx, x, y, 40 + rnd(i, 3) * 34, "#e6fff2", 0.24 * a); glow(ctx, x + 24, y + 8, 28 + rnd(i, 4) * 20, "#ffffff", 0.16 * a);
@@ -415,19 +492,32 @@ const KINDS = {
         crescent(ctx, hand.x, hand.y, 92, rot, open, 30, cfg.c, cfg.c2, 1 - cut); crescent(ctx, hand.x, hand.y, 70, rot, open * 0.85, 14, cfg.c2, "#ffffff", (1 - cut) * 0.85);
       }
     });
-    if (shown > 0 && !far) {
-      lit(ctx, () => { const p = at(k); glow(ctx, p.x, p.y, 120 * sizeAt(k) / full, cfg.c, 0.3 * shown) });
-      dragonAt(k, shown);
-    }
-    // the lance of light it draws down the column behind it
+    // the lance of light it draws down the column: under the dragon, so it burns through its body
     const lance = span(k, DIVE, DIVE + 0.03) * (1 - span(k, EXIT - 0.02, EXIT + 0.14));
     if (lance > 0) lit(ctx, () => {
       const upto = along(Math.min(k, EXIT));
-      ctx.beginPath(); for (let s = 0; s <= 28; s++) { const p = spline(road, upto * s / 28); ctx[s ? "lineTo" : "moveTo"](p.x, p.y) }
+      ctx.beginPath(); for (let s = 0; s <= 28; s++) { const p = spline(road, 1 + (upto - 1) * s / 28); ctx[s ? "lineTo" : "moveTo"](p.x, p.y) }
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       ctx.lineWidth = 26; ctx.strokeStyle = rgba(cfg.c, 0.4 * lance); ctx.stroke();
       ctx.lineWidth = 10; ctx.strokeStyle = rgba(cfg.c2, 0.8 * lance); ctx.stroke();
       ctx.lineWidth = 3; ctx.strokeStyle = rgba("#ffffff", lance); ctx.stroke();
+    });
+    if (shown > 0 && !far) {
+      lit(ctx, () => { const p = at(k); glow(ctx, p.x, p.y, 130 * sizeAt(k), cfg.c, 0.3 * shown) });
+      dragonAt(k, shown);
+    }
+    lit(ctx, () => {
+      // its roar, as it turns to stoop
+      for (const lag of [0, 0.035]) { const q = span(k, DIVE - 0.06 + lag, DIVE + 0.08 + lag); if (q > 0 && q < 1) { const p = at(Math.min(k, DIVE)); ring(ctx, p.x, p.y, 24 + 180 * easeOut(q), 6 * (1 - q) + 1, cfg.c2, (1 - q) * 0.8) } }
+      // the air torn past it as it falls
+      const rush = span(k, DIVE, DIVE + 0.05) * (1 - span(k, EXIT, EXIT + 0.1));
+      if (rush > 0) {
+        const p = at(k), b = at(k - 0.004), l = Math.hypot(p.x - b.x, p.y - b.y) || 1, ux = (p.x - b.x) / l, uy = (p.y - b.y) / l;
+        for (let i = 0; i < 14; i++) {
+          const turn = (time * 3.2 + rnd(i, 1)) % 1, off = (rnd(i, 2) - 0.5) * 180, x = p.x - ux * (30 + turn * 280) - uy * off, y = p.y - uy * (30 + turn * 280) + ux * off, len = 50 + rnd(i, 3) * 110;
+          streak(ctx, x - ux * len, y - uy * len, x, y, 2 + rnd(i, 4) * 2, i % 3 ? cfg.c2 : "#ffffff", rush * (1 - turn) * 0.7);
+        }
+      }
     });
     // each of them is struck as it passes through
     marks.forEach((m, i) => impact(ctx, span(k, passes(i), passes(i) + 0.24), m.t.x, m.t.y, m.t.tall, cfg.c, cfg.c2, 1.5));
